@@ -1,16 +1,16 @@
 #include <iostream>
 #include "Lexer.h"
+#include "value/Value.h"
 
 int main()
 {
-    std::string code = "let hp = 100;";
-    Lexer lexer(code);
-    auto tokens = lexer.tokenize();
+    Value v1(42);
+    Value v2(true);
+    Value v3(std::string("hello"));
 
-    for(const auto& token : tokens)
-    {
-        std::cout << "Token(" << static_cast<int>(token.type) << ", '" << token.value << "')\n";
-    }
+    std::cout << "v1 = " << v1.to_string() << std::endl;
+    std::cout << "v2 = " << v2.to_string() << std::endl;
+    std::cout << "v3 = " << v3.to_string() << std::endl;
 
     return 0;
 }
