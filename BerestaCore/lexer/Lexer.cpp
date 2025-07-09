@@ -3,10 +3,9 @@
 //
 
 #include "Lexer.h"
-#include "Token.h"
 #include <cctype>
 
-Lexer::Lexer(const std::string& src) : source(src), position(0) {}
+Lexer::Lexer(std::string src) : source(std::move(src)), position(0) {}
 
 char Lexer::peek() const
 {
@@ -27,7 +26,7 @@ Token Lexer::next_token()
 {
     skip_whitespace();
     char current = peek();
-    int start_pos = position;
+    size_t start_pos = position;
 
     if(isalpha(current) || current == '_')
     {
@@ -38,25 +37,25 @@ Token Lexer::next_token()
 
         if(ident == "let")
         {
-            return  Token(TokenType::LET, ident, start_pos);
+            return {TokenType::LET, ident, start_pos};
         }
 
-        return  Token(TokenType::IDENTIFIER, ident, start_pos);
+        return  {TokenType::IDENTIFIER, ident, start_pos};
     }
 
     if(isdigit(current))
     {
         std::string number;
         while(isdigit(peek())) {number += advance();}
-        return Token(TokenType::NUMBER, number, start_pos);
+        return {TokenType::NUMBER, number, start_pos};
     }
 
     switch (advance())
     {
-        case '=': return Token(TokenType::EQUALS, "=", start_pos);
-        case ';': return Token(TokenType::SEMICOLON, ";", start_pos);
-        case '\0': return Token(TokenType::END_OF_FILE, "", start_pos);
-        default: return Token(TokenType::UNKNOWN, std::string(1, current), start_pos);
+        case '=': return {TokenType::EQUALS, "=", start_pos};
+        case ';': return {TokenType::SEMICOLON, ";", start_pos};
+        case '\0': return {TokenType::END_OF_FILE, "", start_pos};
+        default: return {TokenType::UNKNOWN, std::string(1, current), start_pos};
     }
 }
 

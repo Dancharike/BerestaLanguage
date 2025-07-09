@@ -13,7 +13,7 @@
 class Lexer
 {
     public:
-        explicit Lexer(const std::string& source);
+        explicit Lexer(std::string source);
         std::vector<Token> tokenize();
 
     private:

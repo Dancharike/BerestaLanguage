@@ -16,6 +16,7 @@ class Interpreter
     public:
         std::pair<std::string, Value> interpret(const std::vector<std::unique_ptr<Statement>>& statements);
         void print_variables() const;
+        void run(const std::string& code);
 
     private:
         std::unordered_map<std::string, Value> variables;

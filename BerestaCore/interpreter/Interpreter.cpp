@@ -4,6 +4,8 @@
 
 #include "Interpreter.h"
 #include "../parser/Evaluator.h"
+#include "lexer/Lexer.h"
+#include "parser/Parser.h"
 #include <iostream>
 #include <vector>
 
@@ -39,5 +41,20 @@ void Interpreter::print_variables() const
     for(const auto& [name, value] : variables)
     {
         std::cout << name << " = " << value.to_string() << std::endl;
+    }
+}
+
+void Interpreter::run(const std::string& code)
+{
+    Lexer lexer(code);
+    auto tokens = lexer.tokenize();
+
+    Parser parser(tokens);
+    auto statements = parser.parse();
+
+    auto [name, value] = interpret(statements);
+    if (!name.empty())
+    {
+        std::cout << " " << name << " = " << value.to_string() << std::endl;
     }
 }
