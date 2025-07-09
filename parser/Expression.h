@@ -20,6 +20,7 @@ enum class ExpressionType
 struct Expression
 {
     ExpressionType type;
+    explicit Expression(ExpressionType type) : type(type) {}
     virtual ~Expression() = default;
 };
 
@@ -27,10 +28,7 @@ struct NumberExpr : public Expression
 {
     Value value;
 
-    explicit NumberExpr(int number) : value(number)
-    {
-        type = ExpressionType::NUMBER;
-    }
+    explicit NumberExpr(int number) : Expression(ExpressionType::NUMBER), value(number) {}
 };
 
 struct BinaryExpr : public Expression
@@ -39,20 +37,15 @@ struct BinaryExpr : public Expression
     std::unique_ptr<Expression> left;
     std::unique_ptr<Expression> right;
 
-    BinaryExpr(char op, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right) : op(op), left(std::move(left)), right(std::move(right))
-    {
-        type = ExpressionType::BINARY;
-    }
+    BinaryExpr(char op, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right)
+        : Expression(ExpressionType::BINARY), op(op), left(std::move(left)), right(std::move(right)) {}
 };
 
 struct VariableExpr : public Expression
 {
     std::string name;
 
-    explicit VariableExpr(std::string name) : name(std::move(name))
-    {
-        type = ExpressionType::VARIABLE;
-    }
+    explicit VariableExpr(std::string name) : Expression(ExpressionType::VARIABLE), name(std::move(name)) {}
 };
 
 #endif //BERESTALANGUAGE_EXPRESSION_H

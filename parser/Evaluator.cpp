@@ -3,7 +3,6 @@
 //
 
 #include "Evaluator.h"
-#include "../value/Value.h"
 #include <iostream>
 #include <unordered_map>
 
@@ -11,23 +10,22 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
 {
     if (expr->type == ExpressionType::NUMBER)
     {
-        return static_cast<NumberExpr*>(expr)->value;
+        return dynamic_cast<NumberExpr*>(expr)->value;
     }
 
     if (expr->type == ExpressionType::VARIABLE)
     {
-        auto* var = static_cast<VariableExpr*>(expr);
+        auto* var = dynamic_cast<VariableExpr*>(expr);
         auto it = variables.find(var->name);
-        if (it != variables.end())
-            return it->second;
+        if (it != variables.end()) { return it->second; }
 
         std::cerr << "[ERROR] Variable not found: " << var->name << std::endl;
-        return Value();
+        return {};
     }
 
     if (expr->type == ExpressionType::BINARY)
     {
-        auto* bin = static_cast<BinaryExpr*>(expr);
+        auto* bin = dynamic_cast<BinaryExpr*>(expr);
         Value left_val = evaluate(bin->left.get(), variables);
         Value right_val = evaluate(bin->right.get(), variables);
 
@@ -44,14 +42,14 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
                 case '/': return (r != 0) ? Value(l / r) : Value(0);
                 default:
                     std::cerr << "[ERROR] Unknown binary operator: " << bin->op << std::endl;
-                    return Value();
+                    return {};
             }
         }
 
         std::cerr << "[ERROR] Unsupported operand types" << std::endl;
-        return Value();
+        return {};
     }
 
     std::cerr << "[ERROR] Unknown expression type" << std::endl;
-    return Value();
+    return {};
 }

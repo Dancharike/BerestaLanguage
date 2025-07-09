@@ -16,7 +16,13 @@ std::pair<std::string, Value> Interpreter::interpret(const std::vector<std::uniq
     {
         if (stmt->type == StatementType::ASSIGNMENT)
         {
-            auto* assign = static_cast<Assignment*>(stmt.get());
+            auto* assign = dynamic_cast<Assignment*>(stmt.get());
+            if(!assign)
+            {
+                std::cerr << "[ERROR] Invalid statement type in interpreter\n";
+                continue;
+            }
+
             Value result = evaluate(assign->value.get(), variables);
 
             variables[assign->name] = result;

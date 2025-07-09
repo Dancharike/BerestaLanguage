@@ -5,7 +5,6 @@
 #include "Parser.h"
 #include "Expression.h"
 #include "ExpressionParser.h"
-#include "Evaluator.h"
 
 Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens) {}
 
