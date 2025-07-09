@@ -3,6 +3,9 @@
 //
 
 #include "Parser.h"
+#include "Expression.h"
+#include "ExpressionParser.h"
+#include "Evaluator.h"
 
 Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens) {}
 
@@ -35,17 +38,14 @@ std::unique_ptr<Assignment> Parser::parse_assignment()
 {
     Token name_token = advance();
     advance();
-    Token value_token = advance();
+
+    ExpressionParser expr_parser(tokens, position);
+    auto expr = expr_parser.parse_expression();
+
     advance();
 
-    Value val;
-
-    if(value_token.type == TokenType::NUMBER)
-    {
-        val = Value(std::stoi(value_token.value));
-    }
-
-    return std::make_unique<Assignment>(name_token.value, val);
+    Value result = evaluate(expr.get());
+    return std::make_unique<Assignment>(name_token.value, result);
 }
 
 std::vector<std::unique_ptr<Statement>> Parser::parse()

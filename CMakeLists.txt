@@ -17,6 +17,11 @@ add_executable(BerestaLanguage main.cpp
         value/Value.cpp
         value/Value.h
         parser/Statement.h
+        parser/Expression.h
+        parser/ExpressionParser.h
+        parser/ExpressionParser.cpp
+        parser/Evaluator.h
+        parser/Evaluator.cpp
         parser/Parser.cpp
         parser/Parser.h
         interpreter/Interpreter.cpp

@@ -5,7 +5,7 @@
 
 int main()
 {
-    std::string code = "let hp = 100;";
+    std::string code = "hp = 100 + 50 * 2;";
     Lexer lexer(code);
     auto tokens = lexer.tokenize();
 
