@@ -5,10 +5,20 @@
 #ifndef BERESTALANGUAGE_INTERPRETER_H
 #define BERESTALANGUAGE_INTERPRETER_H
 
+#pragma once
+#include "../parser/Statement.h"
+#include <unordered_map>
+#include <string>
+#include <vector>
 
-class Interpreter {
+class Interpreter
+{
+    public:
+        void interpret(const std::vector<std::unique_ptr<Statement>>& statements);
+        void print_variables() const;
 
+    private:
+        std::unordered_map<std::string, Value> variables;
 };
-
 
 #endif //BERESTALANGUAGE_INTERPRETER_H

@@ -1,16 +1,20 @@
 #include <iostream>
 #include "Lexer.h"
-#include "value/Value.h"
+#include "interpreter/Interpreter.h"
+#include "parser/Parser.h"
 
 int main()
 {
-    Value v1(42);
-    Value v2(true);
-    Value v3(std::string("hello"));
+    std::string code = "let hp = 100;";
+    Lexer lexer(code);
+    auto tokens = lexer.tokenize();
 
-    std::cout << "v1 = " << v1.to_string() << std::endl;
-    std::cout << "v2 = " << v2.to_string() << std::endl;
-    std::cout << "v3 = " << v3.to_string() << std::endl;
+    Parser parser(tokens);
+    auto statements = parser.parse();
+
+    Interpreter interpreter;
+    interpreter.interpret(statements);
+    interpreter.print_variables();
 
     return 0;
 }
