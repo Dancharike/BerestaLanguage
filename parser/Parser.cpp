@@ -44,8 +44,7 @@ std::unique_ptr<Assignment> Parser::parse_assignment()
 
     advance();
 
-    Value result = evaluate(expr.get());
-    return std::make_unique<Assignment>(name_token.value, result);
+    return std::make_unique<Assignment>(name_token.value, std::move(expr));
 }
 
 std::vector<std::unique_ptr<Statement>> Parser::parse()

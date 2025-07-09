@@ -50,8 +50,12 @@ std::unique_ptr<Expression> ExpressionParser::parse_factor()
 
     if(tok.type == TokenType::NUMBER)
     {
-        std::cout << "[DEBUG] Number: " << tok.value << std::endl;
         return std::make_unique<NumberExpr>(std::stoi(tok.value));
+    }
+
+    if(tok.type == TokenType::IDENTIFIER)
+    {
+        return std::make_unique<VariableExpr>(tok.value);
     }
 
     std::cerr << "[ERROR] parse_factor(): unexpected token: " << tok.value << "\n";

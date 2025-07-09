@@ -29,10 +29,12 @@ Token Lexer::next_token()
     char current = peek();
     int start_pos = position;
 
-    if(isalpha(current))
+    if(isalpha(current) || current == '_')
     {
         std::string ident;
-        while (isalnum(peek())) {ident += advance();}
+        ident += advance();
+
+        while(isalnum(peek()) || peek() == '_') {ident += advance();}
 
         if(ident == "let")
         {
@@ -61,10 +63,12 @@ Token Lexer::next_token()
 std::vector<Token> Lexer::tokenize()
 {
     std::vector<Token> tokens;
-    while (true) {
+    while(true)
+    {
         Token token = next_token();
         tokens.push_back(token);
-        if (token.type == TokenType::END_OF_FILE) break;
+        if (token.type == TokenType::END_OF_FILE) {break;}
     }
+
     return tokens;
 }

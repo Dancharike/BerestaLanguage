@@ -7,6 +7,7 @@
 
 #pragma once
 #include "../value/Value.h"
+#include "Expression.h"
 #include <string>
 #include <memory>
 
@@ -24,9 +25,9 @@ struct Statement
 struct Assignment : public Statement
 {
     std::string name;
-    Value value;
+    std::unique_ptr<Expression> value;
 
-    Assignment(const std::string name, const Value& value) : name(name), value(value)
+    Assignment(std::string name, std::unique_ptr<Expression> value): name(std::move(name)), value(std::move(value))
     {
         type = StatementType::ASSIGNMENT;
     }

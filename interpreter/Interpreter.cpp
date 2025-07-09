@@ -3,19 +3,29 @@
 //
 
 #include "Interpreter.h"
+#include "../parser/Evaluator.h"
 #include <iostream>
 #include <vector>
 
-void Interpreter::interpret(const std::vector<std::unique_ptr<Statement>>& statements)
+std::pair<std::string, Value> Interpreter::interpret(const std::vector<std::unique_ptr<Statement>>& statements)
 {
-    for(const auto& stmt : statements)
+    std::string last_name;
+    Value last_value;
+
+    for (const auto& stmt : statements)
     {
-        if(stmt->type == StatementType::ASSIGNMENT)
+        if (stmt->type == StatementType::ASSIGNMENT)
         {
             auto* assign = static_cast<Assignment*>(stmt.get());
-            variables[assign->name] = assign->value;
+            Value result = evaluate(assign->value.get(), variables);
+
+            variables[assign->name] = result;
+            last_name = assign->name;
+            last_value = result;
         }
     }
+
+    return {last_name, last_value};
 }
 
 void Interpreter::print_variables() const

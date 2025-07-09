@@ -14,7 +14,7 @@
 class Interpreter
 {
     public:
-        void interpret(const std::vector<std::unique_ptr<Statement>>& statements);
+        std::pair<std::string, Value> interpret(const std::vector<std::unique_ptr<Statement>>& statements);
         void print_variables() const;
 
     private:

@@ -13,7 +13,8 @@
 enum class ExpressionType
 {
     NUMBER,
-    BINARY
+    BINARY,
+    VARIABLE
 };
 
 struct Expression
@@ -41,6 +42,16 @@ struct BinaryExpr : public Expression
     BinaryExpr(char op, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right) : op(op), left(std::move(left)), right(std::move(right))
     {
         type = ExpressionType::BINARY;
+    }
+};
+
+struct VariableExpr : public Expression
+{
+    std::string name;
+
+    explicit VariableExpr(std::string name) : name(std::move(name))
+    {
+        type = ExpressionType::VARIABLE;
     }
 };
 
