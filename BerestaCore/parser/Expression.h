@@ -30,6 +30,7 @@ struct NumberExpr : public Expression
     Value value;
 
     explicit NumberExpr(int number) : Expression(ExpressionType::NUMBER), value(number) {}
+    explicit NumberExpr(double number) : Expression(ExpressionType::NUMBER), value(number) {}
 };
 
 struct BinaryExpr : public Expression

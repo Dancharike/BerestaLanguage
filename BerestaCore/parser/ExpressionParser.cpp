@@ -70,7 +70,17 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
 
     if(match(TokenType::NUMBER))
     {
-        return std::make_unique<NumberExpr>(std::stoi(tokens[position - 1].value));
+        //return std::make_unique<NumberExpr>(std::stoi(tokens[position - 1].value));
+
+        const std::string& val = tokens[position - 1].value;
+        if(val.find('.') != std::string::npos)
+        {
+            return std::make_unique<NumberExpr>(std::stod(val));
+        }
+        else
+        {
+            return std::make_unique<NumberExpr>(std::stoi(val));
+        }
     }
 
     if(match(TokenType::IDENTIFIER))

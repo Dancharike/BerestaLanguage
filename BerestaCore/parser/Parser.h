@@ -25,6 +25,7 @@ class Parser
         Token advance();
         std::unique_ptr<Statement> parse_statement();
         std::unique_ptr<Assignment> parse_assignment();
+        bool match(TokenType type);
 };
 
 

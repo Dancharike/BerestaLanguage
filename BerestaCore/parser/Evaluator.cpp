@@ -13,6 +13,17 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
         auto* unary = dynamic_cast<UnaryExpr*>(expr);
         Value right_val = evaluate(unary->right.get(), variables);
 
+        if(right_val.type == ValueType::DOUBLE)
+        {
+            double val = std::get<double>(right_val.data);
+            switch(unary->op)
+            {
+                case '-': return Value(-val);
+                case '+': return Value(+val);
+                default: std::cerr << "[ERROR] Unknown unary operator: " << unary->op << std::endl; return {};
+            }
+        }
+
         if(right_val.type == ValueType::INTEGER)
         {
             int val = std::get<int>(right_val.data);
@@ -49,7 +60,22 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
         Value left_val = evaluate(bin->left.get(), variables);
         Value right_val = evaluate(bin->right.get(), variables);
 
-        if (left_val.type == ValueType::INTEGER && right_val.type == ValueType::INTEGER)
+        if((left_val.type == ValueType::INTEGER|| left_val.type == ValueType::DOUBLE) && (right_val.type == ValueType::INTEGER || right_val.type == ValueType::DOUBLE))
+        {
+            double l = (left_val.type == ValueType::DOUBLE) ? std::get<double>(left_val.data) : std::get<int>(left_val.data);
+            double r = (right_val.type == ValueType::DOUBLE) ? std::get<double>(right_val.data) : std::get<int>(right_val.data);
+
+            switch (bin->op)
+            {
+                case '+': return Value(l + r);
+                case '-': return Value(l - r);
+                case '*': return Value(l * r);
+                case '/': return (r != 0.0) ? Value(l / r) : Value(0.0);
+                default: std::cerr <<  "[ERROR] Unknown binary operator: " << bin->op << std::endl; return {};
+            }
+        }
+
+        if(left_val.type == ValueType::INTEGER && right_val.type == ValueType::INTEGER)
         {
             int l = std::get<int>(left_val.data);
             int r = std::get<int>(right_val.data);

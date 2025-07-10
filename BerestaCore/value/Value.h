@@ -31,7 +31,7 @@ class Value
         explicit Value(bool val);
         explicit Value(const std::string& val);
 
-        std::string to_string() const;
+        [[nodiscard]] std::string to_string() const;
 };
 
 
