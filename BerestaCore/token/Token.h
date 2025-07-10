@@ -16,6 +16,8 @@ enum class TokenType
     NUMBER,
     EQUALS,
     SEMICOLON,
+    LEFT_PAREN,
+    RIGHT_PAREN,
     END_OF_FILE,
     UNKNOWN
 };

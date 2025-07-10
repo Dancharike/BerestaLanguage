@@ -8,6 +8,26 @@
 
 Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& variables)
 {
+    if(expr->type == ExpressionType::UNARY)
+    {
+        auto* unary = dynamic_cast<UnaryExpr*>(expr);
+        Value right_val = evaluate(unary->right.get(), variables);
+
+        if(right_val.type == ValueType::INTEGER)
+        {
+            int val = std::get<int>(right_val.data);
+            switch(unary->op)
+            {
+                case '-': return Value(-val);
+                case '+': return Value(+val);
+                default: std::cerr << "[ERROR] Unknown unary operator: " << unary->op << std::endl; return {};
+            }
+        }
+
+        std::cerr << "[ERROR] Unsupported unary operand type" << std::endl;
+        return {};
+    }
+
     if (expr->type == ExpressionType::NUMBER)
     {
         return dynamic_cast<NumberExpr*>(expr)->value;

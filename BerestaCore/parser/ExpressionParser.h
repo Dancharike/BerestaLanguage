@@ -23,8 +23,10 @@ class ExpressionParser
 
         std::unique_ptr<Expression> parse_term();
         std::unique_ptr<Expression> parse_factor();
+        std::unique_ptr<Expression> parse_primary();
         Token advance();
         [[nodiscard]] Token peek() const;
+        bool match(TokenType type);
 };
 
 

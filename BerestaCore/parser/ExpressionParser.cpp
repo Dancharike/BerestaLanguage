@@ -16,48 +16,79 @@ Token ExpressionParser::advance()
     return tokens[position++];
 }
 
+bool ExpressionParser::match(TokenType type)
+{
+    if(peek().type == type)
+    {
+        advance();
+        return true;
+    }
+    return false;
+}
+
 std::unique_ptr<Expression> ExpressionParser::parse_expression()
 {
-    auto left = parse_term();
-
-    while(peek().value == "+" || peek().value == "-")
-    {
-        char op = advance().value[0];
-        auto right = parse_term();
-        left = std::make_unique<BinaryExpr>(op, std::move(left), std::move(right));
-    }
-
-    return left;
+    return parse_term();
 }
 
 std::unique_ptr<Expression> ExpressionParser::parse_term()
 {
-    auto left = parse_factor();
+    auto expr = parse_factor();
 
-    while(peek().value == "*" || peek().value == "/")
+    while(peek().value == "+" || peek().value == "-")
     {
         char op = advance().value[0];
         auto right = parse_factor();
-        left = std::make_unique<BinaryExpr>(op, std::move(left), std::move(right));
+        expr = std::make_unique<BinaryExpr>(op, std::move(expr), std::move(right));
     }
 
-    return left;
+    return expr;
 }
 
 std::unique_ptr<Expression> ExpressionParser::parse_factor()
 {
-    Token tok = advance();
+    auto expr = parse_primary();
 
-    if(tok.type == TokenType::NUMBER)
+    while(peek().value == "*" || peek().value == "/")
     {
-        return std::make_unique<NumberExpr>(std::stoi(tok.value));
+        char op = advance().value[0];
+        auto right = parse_primary();
+        expr = std::make_unique<BinaryExpr>(op, std::move(expr), std::move(right));
     }
 
-    if(tok.type == TokenType::IDENTIFIER)
+    return expr;
+}
+
+std::unique_ptr<Expression> ExpressionParser::parse_primary()
+{
+    if(peek().value == "-" || peek().value == "+")
     {
-        return std::make_unique<VariableExpr>(tok.value);
+        char op = advance().value[0];
+        auto right = parse_primary();
+        return std::make_unique<UnaryExpr>(op, std::move(right));
     }
 
-    std::cerr << "[ERROR] parse_factor(): unexpected token: " << tok.value << "\n";
+    if(match(TokenType::NUMBER))
+    {
+        return std::make_unique<NumberExpr>(std::stoi(tokens[position - 1].value));
+    }
+
+    if(match(TokenType::IDENTIFIER))
+    {
+        return std::make_unique<VariableExpr>(tokens[position - 1].value);
+    }
+
+    if(match(TokenType::LEFT_PAREN))
+    {
+        auto expr = parse_expression();
+        if (!match(TokenType::RIGHT_PAREN))
+        {
+            std::cerr << "Expected ')' after expression.\n";
+            return nullptr;
+        }
+        return expr;
+    }
+
+    std::cerr << "Unexpected token: " << peek().value << "\n";
     return nullptr;
 }

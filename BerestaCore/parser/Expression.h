@@ -14,7 +14,8 @@ enum class ExpressionType
 {
     NUMBER,
     BINARY,
-    VARIABLE
+    VARIABLE,
+    UNARY
 };
 
 struct Expression
@@ -46,6 +47,14 @@ struct VariableExpr : public Expression
     std::string name;
 
     explicit VariableExpr(std::string name) : Expression(ExpressionType::VARIABLE), name(std::move(name)) {}
+};
+
+struct UnaryExpr : public Expression
+{
+    char op;
+    std::unique_ptr<Expression> right;
+
+    UnaryExpr(char op, std::unique_ptr<Expression> right): Expression(ExpressionType::UNARY), op(op), right(std::move(right)) {}
 };
 
 #endif //BERESTALANGUAGE_EXPRESSION_H

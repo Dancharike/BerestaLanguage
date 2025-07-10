@@ -54,6 +54,8 @@ Token Lexer::next_token()
     {
         case '=': return {TokenType::EQUALS, "=", start_pos};
         case ';': return {TokenType::SEMICOLON, ";", start_pos};
+        case '(': return {TokenType::LEFT_PAREN, "(", start_pos};
+        case ')': return {TokenType::RIGHT_PAREN, "(", start_pos};
         case '\0': return {TokenType::END_OF_FILE, "", start_pos};
         default: return {TokenType::UNKNOWN, std::string(1, current), start_pos};
     }
