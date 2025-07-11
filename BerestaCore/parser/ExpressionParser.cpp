@@ -28,7 +28,62 @@ bool ExpressionParser::match(TokenType type)
 
 std::unique_ptr<Expression> ExpressionParser::parse_expression()
 {
-    return parse_term();
+    return parse_if_expression();
+}
+
+std::unique_ptr<Expression> ExpressionParser::parse_if_expression()
+{
+    if(match(TokenType::IF))
+    {
+        if(!match(TokenType::LEFT_PAREN)) {std::cerr << "Expected '(' after 'if'.\n"; return nullptr;}
+
+        auto condition = parse_expression();
+
+        if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Expected ')' after condition.\n"; return nullptr;}
+
+        auto then_branch = parse_expression();
+
+        std::unique_ptr<Expression> else_branch = nullptr;
+
+        if(match(TokenType::ELSE))
+        {
+            if(peek().type == TokenType::IF) {else_branch = parse_if_expression();}
+            else {else_branch = parse_expression();}
+        }
+
+        return std::make_unique<IfExpr>(std::move(condition), std::move(then_branch), std::move(else_branch));
+    }
+
+    return parse_logic();
+}
+
+std::unique_ptr<Expression> ExpressionParser::parse_logic()
+{
+    auto expr = parse_comparison();
+
+    while(match(TokenType::AND) || match(TokenType::OR))
+    {
+        Token op = tokens[position - 1];
+        auto right = parse_comparison();
+        expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right));
+    }
+
+    return expr;
+}
+
+std::unique_ptr<Expression> ExpressionParser::parse_comparison()
+{
+    auto expr = parse_term();
+
+    while(match(TokenType::EQUAL_EQUAL) || match(TokenType::BANG_EQUAL) || match(TokenType::LESS) ||
+        match(TokenType::LESS_EQUAL) || match(TokenType::GREATER) || match((TokenType::GREATER_EQUAL)))
+    {
+        Token op = tokens[position - 1];
+        auto right = parse_term();
+        expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right));
+    }
+
+    return expr;
 }
 
 std::unique_ptr<Expression> ExpressionParser::parse_term()
@@ -37,7 +92,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_term()
 
     while(peek().value == "+" || peek().value == "-")
     {
-        char op = advance().value[0];
+        std::string op = advance().value;
         auto right = parse_factor();
         expr = std::make_unique<BinaryExpr>(op, std::move(expr), std::move(right));
     }
@@ -51,7 +106,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_factor()
 
     while(peek().value == "*" || peek().value == "/")
     {
-        char op = advance().value[0];
+        std::string op = advance().value;
         auto right = parse_primary();
         expr = std::make_unique<BinaryExpr>(op, std::move(expr), std::move(right));
     }

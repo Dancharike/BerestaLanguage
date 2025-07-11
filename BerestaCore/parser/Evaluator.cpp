@@ -39,12 +39,12 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
         return {};
     }
 
-    if (expr->type == ExpressionType::NUMBER)
+    if(expr->type == ExpressionType::NUMBER)
     {
         return dynamic_cast<NumberExpr*>(expr)->value;
     }
 
-    if (expr->type == ExpressionType::VARIABLE)
+    if(expr->type == ExpressionType::VARIABLE)
     {
         auto* var = dynamic_cast<VariableExpr*>(expr);
         auto it = variables.find(var->name);
@@ -53,8 +53,8 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
         std::cerr << "[ERROR] Variable not found: " << var->name << std::endl;
         return {};
     }
-
-    if (expr->type == ExpressionType::BINARY)
+    /*
+    if(expr->type == ExpressionType::BINARY)
     {
         auto* bin = dynamic_cast<BinaryExpr*>(expr);
         Value left_val = evaluate(bin->left.get(), variables);
@@ -65,13 +65,13 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
             double l = (left_val.type == ValueType::DOUBLE) ? std::get<double>(left_val.data) : std::get<int>(left_val.data);
             double r = (right_val.type == ValueType::DOUBLE) ? std::get<double>(right_val.data) : std::get<int>(right_val.data);
 
-            switch (bin->op)
+            switch(bin->op)
             {
                 case '+': return Value(l + r);
                 case '-': return Value(l - r);
                 case '*': return Value(l * r);
                 case '/': return (r != 0.0) ? Value(l / r) : Value(0.0);
-                default: std::cerr <<  "[ERROR] Unknown binary operator: " << bin->op << std::endl; return {};
+                default: std::cerr << "[ERROR] Unknown binary operator: " << bin->op << std::endl; return {};
             }
         }
 
@@ -86,14 +86,69 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
                 case '-': return Value(l - r);
                 case '*': return Value(l * r);
                 case '/': return (r != 0) ? Value(l / r) : Value(0);
-                default:
-                    std::cerr << "[ERROR] Unknown binary operator: " << bin->op << std::endl;
-                    return {};
+                default: std::cerr << "[ERROR] Unknown binary operator: " << bin->op << std::endl; return {};
             }
         }
 
         std::cerr << "[ERROR] Unsupported operand types" << std::endl;
         return {};
+    }
+    */
+
+    if(expr->type == ExpressionType::BINARY)
+    {
+        auto* bin = dynamic_cast<BinaryExpr*>(expr);
+        Value left_val = evaluate(bin->left.get(), variables);
+        Value right_val = evaluate(bin->right.get(), variables);
+        const std::string& op = bin->op;
+
+        if((left_val.type == ValueType::INTEGER || left_val.type == ValueType::DOUBLE) && (right_val.type == ValueType::INTEGER || right_val.type == ValueType::DOUBLE))
+        {
+            double l = (left_val.type == ValueType::DOUBLE) ? std::get<double>(left_val.data) : std::get<int>(left_val.data);
+            double r = (right_val.type == ValueType::DOUBLE) ? std::get<double>(right_val.data) : std::get<int>(right_val.data);
+
+            if(op == "+") return Value(l + r);
+            if(op == "-") return Value(l - r);
+            if(op == "*") return Value(l * r);
+            if(op == "/") return (r != 0.0) ? Value(l / r) : Value(0.0);
+
+            if(op == "==") return Value(l == r);
+            if(op == "!=") return Value(l != r);
+            if(op == "<")  return Value(l <  r);
+            if(op == "<=") return Value(l <= r);
+            if(op == ">")  return Value(l >  r);
+            if(op == ">=") return Value(l >= r);
+        }
+
+        if(left_val.type == ValueType::BOOLEAN && right_val.type == ValueType::BOOLEAN)
+        {
+            bool l = std::get<bool>(left_val.data);
+            bool r = std::get<bool>(right_val.data);
+
+            if(op == "==") return Value(l == r);
+            if(op == "!=") return Value(l != r);
+            if(op == "and" || op == "&&") return Value(l && r);
+            if(op == "or" || op == "||") return Value(l || r);
+        }
+
+        std::cerr << "[ERROR] Unsupported operand types" << std::endl;
+        return {};
+    }
+
+    if(expr->type == ExpressionType::IF)
+    {
+        auto* if_expr = dynamic_cast<IfExpr*>(expr);
+        Value condition_val = evaluate(if_expr->condition.get(), variables);
+
+        bool condition_truthy = false;
+        if(condition_val.type == ValueType::INTEGER) {condition_truthy = std::get<int>(condition_val.data) != 0;}
+        else if(condition_val.type == ValueType::DOUBLE) {condition_truthy = std::get<double>(condition_val.data) != 0.0;}
+        else if(condition_val.type == ValueType::BOOLEAN) {condition_truthy = std::get<bool>(condition_val.data);}
+        else {std::cerr << "[ERROR] Invalid condition type in if-expression\n"; return {};}
+
+        if(condition_truthy) {return evaluate(if_expr->then_branch.get(), variables);}
+        else if(if_expr->else_branch) {return evaluate(if_expr->else_branch.get(), variables);}
+        else {return {};}
     }
 
     std::cerr << "[ERROR] Unknown expression type" << std::endl;

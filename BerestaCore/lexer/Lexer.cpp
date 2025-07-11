@@ -28,6 +28,29 @@ Token Lexer::next_token()
     char current = peek();
     size_t start_pos = position;
 
+    if(current == '/' && source[position + 1] == '/')
+    {
+        while(peek() != '\n' && peek() != '\0') {advance();}
+        return next_token();
+    }
+
+    if(current == '/' && source[position + 1] == '*')
+    {
+        advance(); advance();
+
+        while(peek() != '\0')
+        {
+            if(peek() == '*' && source[position + 1] == '/')
+            {
+                advance(); advance(); break;
+            }
+
+            advance();
+        }
+
+        return next_token();
+    }
+
     if(isalpha(current) || current == '_')
     {
         std::string ident;
@@ -35,10 +58,11 @@ Token Lexer::next_token()
 
         while(isalnum(peek()) || peek() == '_') {ident += advance();}
 
-        if(ident == "let")
-        {
-            return {TokenType::LET, ident, start_pos};
-        }
+        if(ident == "let") return {TokenType::LET, ident, start_pos};
+        if(ident == "and") return {TokenType::AND, ident, start_pos};
+        if(ident == "or") return {TokenType::OR, ident, start_pos};
+        if(ident == "if") return {TokenType::IF, ident, start_pos};
+        if(ident == "else") return {TokenType::ELSE, ident, start_pos};
 
         return  {TokenType::IDENTIFIER, ident, start_pos};
     }
@@ -60,17 +84,20 @@ Token Lexer::next_token()
 
         return {TokenType::NUMBER, number, start_pos};
     }
-    /*
-    if(isdigit(current))
-    {
-        std::string number;
-        while(isdigit(peek())) {number += advance();}
-        return {TokenType::NUMBER, number, start_pos};
-    }
-    */
+
+    if(current == '=' && source[position + 1] == '=') {advance(); advance(); return {TokenType::EQUAL_EQUAL, "==", start_pos};}
+    if(current == '!' && source[position + 1] == '=') {advance(); advance(); return {TokenType::BANG_EQUAL, "!=", start_pos};}
+    if(current == '<' && source[position + 1] == '=') {advance(); advance(); return {TokenType::LESS_EQUAL, "<=", start_pos};}
+    if(current == '>' && source[position + 1] == '=') {advance(); advance(); return {TokenType::GREATER_EQUAL, ">=", start_pos};}
+    if(current == '&' && source[position + 1] == '&') {advance(); advance(); return {TokenType::AND, "&&", start_pos};}
+    if(current == '|' && source[position + 1] == '|') {advance(); advance(); return {TokenType::OR, "||", start_pos};}
+
     switch (advance())
     {
         case '=': return {TokenType::EQUALS, "=", start_pos};
+        case '!': return {TokenType::BANG, "!", start_pos};
+        case '<': return {TokenType::LESS, "<", start_pos};
+        case '>': return {TokenType::GREATER, ">", start_pos};
         case ';': return {TokenType::SEMICOLON, ";", start_pos};
         case '(': return {TokenType::LEFT_PAREN, "(", start_pos};
         case ')': return {TokenType::RIGHT_PAREN, ")", start_pos};
@@ -86,7 +113,7 @@ std::vector<Token> Lexer::tokenize()
     {
         Token token = next_token();
         tokens.push_back(token);
-        if (token.type == TokenType::END_OF_FILE) {break;}
+        if(token.type == TokenType::END_OF_FILE) {break;}
     }
 
     return tokens;

@@ -18,6 +18,17 @@ enum class TokenType
     SEMICOLON,
     LEFT_PAREN,
     RIGHT_PAREN,
+    EQUAL_EQUAL,
+    BANG_EQUAL,
+    BANG,
+    LESS,
+    LESS_EQUAL,
+    GREATER,
+    GREATER_EQUAL,
+    AND,
+    OR,
+    IF,
+    ELSE,
     END_OF_FILE,
     UNKNOWN
 };

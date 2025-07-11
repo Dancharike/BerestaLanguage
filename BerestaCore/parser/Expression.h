@@ -15,7 +15,8 @@ enum class ExpressionType
     NUMBER,
     BINARY,
     VARIABLE,
-    UNARY
+    UNARY,
+    IF
 };
 
 struct Expression
@@ -35,12 +36,13 @@ struct NumberExpr : public Expression
 
 struct BinaryExpr : public Expression
 {
-    char op;
+    //char op;  // пришлось заменить на строчку, ибо в противном случае невозможно будет реализовать операторы сравнения
+    std::string op;
     std::unique_ptr<Expression> left;
     std::unique_ptr<Expression> right;
 
-    BinaryExpr(char op, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right)
-        : Expression(ExpressionType::BINARY), op(op), left(std::move(left)), right(std::move(right)) {}
+    BinaryExpr(std::string op, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right)
+        : Expression(ExpressionType::BINARY), op(std::move(op)), left(std::move(left)), right(std::move(right)) {}
 };
 
 struct VariableExpr : public Expression
@@ -56,6 +58,16 @@ struct UnaryExpr : public Expression
     std::unique_ptr<Expression> right;
 
     UnaryExpr(char op, std::unique_ptr<Expression> right): Expression(ExpressionType::UNARY), op(op), right(std::move(right)) {}
+};
+
+struct IfExpr : public Expression
+{
+    std::unique_ptr<Expression> condition;
+    std::unique_ptr<Expression> then_branch;
+    std::unique_ptr<Expression> else_branch;
+
+    IfExpr(std::unique_ptr<Expression> cond, std::unique_ptr<Expression> then_b, std::unique_ptr<Expression> else_b = nullptr)
+        : Expression(ExpressionType::IF), condition(std::move(cond)), then_branch(std::move(then_b)), else_branch(std::move(else_b)) {}
 };
 
 #endif //BERESTALANGUAGE_EXPRESSION_H
