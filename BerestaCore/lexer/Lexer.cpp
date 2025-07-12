@@ -63,6 +63,7 @@ Token Lexer::next_token()
         if(ident == "or") return {TokenType::OR, ident, start_pos};
         if(ident == "if") return {TokenType::IF, ident, start_pos};
         if(ident == "else") return {TokenType::ELSE, ident, start_pos};
+        if(ident == "console_print") return {TokenType::CONSOLE_PRINT, ident, start_pos};
 
         return  {TokenType::IDENTIFIER, ident, start_pos};
     }
@@ -101,6 +102,8 @@ Token Lexer::next_token()
         case ';': return {TokenType::SEMICOLON, ";", start_pos};
         case '(': return {TokenType::LEFT_PAREN, "(", start_pos};
         case ')': return {TokenType::RIGHT_PAREN, ")", start_pos};
+        case '{': return {TokenType::LEFT_BRACE, "{", start_pos};
+        case '}': return {TokenType::RIGHT_BRACE, "}", start_pos};
         case '\0': return {TokenType::END_OF_FILE, "", start_pos};
         default: return {TokenType::UNKNOWN, std::string(1, current), start_pos};
     }

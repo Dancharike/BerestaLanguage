@@ -151,6 +151,27 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
         else {return {};}
     }
 
+    if(expr->type == ExpressionType::BLOCK)
+    {
+        auto* block = dynamic_cast<BlockExpr*>(expr);
+        Value result;
+
+        for(const auto& stmt : block->statements)
+        {
+            result = evaluate(stmt.get(), variables);
+        }
+
+        return result;
+    }
+
+    if(expr->type == ExpressionType::CONSOLE_PRINT)
+    {
+        auto* print_expr = dynamic_cast<ConsolePrintExpr*>(expr);
+        Value value = evaluate(print_expr->expression.get(), variables);
+        std::cout << value.to_string() << std::endl;
+        return value;
+    }
+
     std::cerr << "[ERROR] Unknown expression type" << std::endl;
     return {};
 }

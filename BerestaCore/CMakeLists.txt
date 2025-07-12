@@ -20,6 +20,8 @@ add_library(BerestaCore STATIC
         parser/Parser.h
         interpreter/Interpreter.cpp
         interpreter/Interpreter.h
+        parser/StatementParser.cpp
+        parser/StatementParser.h
 )
 
 target_include_directories(BerestaCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

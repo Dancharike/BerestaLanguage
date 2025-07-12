@@ -17,15 +17,16 @@ class Parser
         explicit Parser(const std::vector<Token>& tokens);
         std::vector<std::unique_ptr<Statement>> parse();
 
+        size_t position = 0;
+        [[nodiscard]] Token peek() const;
+        Token advance();
+        bool match(TokenType type);
+        std::unique_ptr<Statement> parse_statement();
+
     private:
         const std::vector<Token>& tokens;
-        size_t position = 0;
 
-        Token peek() const;
-        Token advance();
-        std::unique_ptr<Statement> parse_statement();
         std::unique_ptr<Assignment> parse_assignment();
-        bool match(TokenType type);
 };
 
 

@@ -5,6 +5,7 @@
 #include "Parser.h"
 #include "Expression.h"
 #include "ExpressionParser.h"
+#include "StatementParser.h"
 
 Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens) {}
 
@@ -21,19 +22,22 @@ Token Parser::advance()
 std::unique_ptr<Statement> Parser::parse_statement()
 {
     match(TokenType::LET);
-    /*
-    if(peek().type == TokenType::LET)
-    {
-        advance();
-    }
-    */
 
-    if(peek().type == TokenType::IDENTIFIER)
+    if(peek().type == TokenType::IDENTIFIER && tokens[position + 1].type == TokenType::EQUALS) {return parse_assignment();}
+
+    if(peek().type == TokenType::LEFT_BRACE)
     {
-        return parse_assignment();
+        StatementParser stmt_parser(tokens, position);
+        return stmt_parser.parse_block();
     }
 
-    return nullptr;
+    ExpressionParser expr_parser(tokens, position);
+    auto expr = expr_parser.parse_expression();
+
+    if(!expr) {std::cerr << "[ERROR] Failed to parse expression\n"; return nullptr;}
+    if(!match(TokenType::SEMICOLON)) {std::cerr << "Expected ';' after expression\n"; return nullptr;}
+
+    return std::make_unique<ExpressionStatement>(std::move(expr));
 }
 
 std::unique_ptr<Assignment> Parser::parse_assignment()

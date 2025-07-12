@@ -28,7 +28,41 @@ bool ExpressionParser::match(TokenType type)
 
 std::unique_ptr<Expression> ExpressionParser::parse_expression()
 {
+    auto function_expr = parse_functions();
+    if(function_expr) {return function_expr;}
+    if(match(TokenType::LEFT_BRACE)) {return parse_block();}
+
     return parse_if_expression();
+}
+
+std::unique_ptr<Expression> ExpressionParser::parse_functions()
+{
+    if(match(TokenType::CONSOLE_PRINT))
+    {
+        if(!match(TokenType::LEFT_PAREN)) {std::cerr << "Expected '(' after 'console_print'.\n"; return nullptr;}
+
+        auto expr = parse_expression();
+
+        if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Expected ')' after 'console_print'.\n"; return nullptr;}
+
+        return std::make_unique<ConsolePrintExpr>(std::move(expr));
+    }
+
+    return nullptr;
+}
+
+std::unique_ptr<Expression> ExpressionParser::parse_block()
+{
+    std::vector<std::unique_ptr<Expression>> statements;
+
+    while(!match(TokenType::RIGHT_BRACE) && peek().type != TokenType::END_OF_FILE)
+    {
+        auto stmt = parse_expression();
+        if(stmt) {statements.push_back(std::move(stmt));}
+        match(TokenType::SEMICOLON);
+    }
+
+    return std::make_unique<BlockExpr>(std::move(statements));
 }
 
 std::unique_ptr<Expression> ExpressionParser::parse_if_expression()

@@ -14,9 +14,9 @@ std::pair<std::string, Value> Interpreter::interpret(const std::vector<std::uniq
     std::string last_name;
     Value last_value;
 
-    for (const auto& stmt : statements)
+    for(const auto& stmt : statements)
     {
-        if (stmt->type == StatementType::ASSIGNMENT)
+        if(stmt->type == StatementType::ASSIGNMENT)
         {
             auto* assign = dynamic_cast<Assignment*>(stmt.get());
             if(!assign)
@@ -30,6 +30,19 @@ std::pair<std::string, Value> Interpreter::interpret(const std::vector<std::uniq
             variables[assign->name] = result;
             last_name = assign->name;
             last_value = result;
+        }
+
+        if(stmt->type == StatementType::EXPRESSION)
+        {
+            auto* expr_stmt = dynamic_cast<ExpressionStatement*>(stmt.get());
+            if(expr_stmt) {evaluate(expr_stmt->expression.get(), variables);}
+        }
+
+        if(stmt->type == StatementType::BLOCK)
+        {
+            auto* block = dynamic_cast<BlockStatement*>(stmt.get());
+            if(!block) {std::cerr << "[ERROR] Invalid block cast\n"; continue;}
+            interpret(block->statements);
         }
     }
 
@@ -52,9 +65,13 @@ void Interpreter::run(const std::string& code)
     Parser parser(tokens);
     auto statements = parser.parse();
 
+    interpret(statements);
+
+    /*
     auto [name, value] = interpret(statements);
     if (!name.empty())
     {
         std::cout << " " << name << " = " << value.to_string() << std::endl;
     }
+     */
 }

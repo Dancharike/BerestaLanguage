@@ -18,6 +18,8 @@ enum class TokenType
     SEMICOLON,
     LEFT_PAREN,
     RIGHT_PAREN,
+    LEFT_BRACE,
+    RIGHT_BRACE,
     EQUAL_EQUAL,
     BANG_EQUAL,
     BANG,
@@ -30,6 +32,7 @@ enum class TokenType
     IF,
     ELSE,
     END_OF_FILE,
+    CONSOLE_PRINT,
     UNKNOWN
 };
 

@@ -9,6 +9,7 @@
 #include "../value/Value.h"
 #include <memory>
 #include <string>
+#include <vector>
 
 enum class ExpressionType
 {
@@ -16,7 +17,9 @@ enum class ExpressionType
     BINARY,
     VARIABLE,
     UNARY,
-    IF
+    IF,
+    BLOCK,
+    CONSOLE_PRINT
 };
 
 struct Expression
@@ -68,6 +71,20 @@ struct IfExpr : public Expression
 
     IfExpr(std::unique_ptr<Expression> cond, std::unique_ptr<Expression> then_b, std::unique_ptr<Expression> else_b = nullptr)
         : Expression(ExpressionType::IF), condition(std::move(cond)), then_branch(std::move(then_b)), else_branch(std::move(else_b)) {}
+};
+
+struct BlockExpr : public Expression
+{
+    std::vector<std::unique_ptr<Expression>> statements;
+
+    explicit BlockExpr(std::vector<std::unique_ptr<Expression>> stmts) : Expression(ExpressionType::BLOCK), statements(std::move(stmts)) {}
+};
+
+struct ConsolePrintExpr : public Expression
+{
+    std::unique_ptr<Expression> expression;
+
+    explicit ConsolePrintExpr(std::unique_ptr<Expression> expr) : Expression(ExpressionType::CONSOLE_PRINT), expression(std::move(expr)) {}
 };
 
 #endif //BERESTALANGUAGE_EXPRESSION_H
