@@ -19,11 +19,7 @@ std::pair<std::string, Value> Interpreter::interpret(const std::vector<std::uniq
         if(stmt->type == StatementType::ASSIGNMENT)
         {
             auto* assign = dynamic_cast<Assignment*>(stmt.get());
-            if(!assign)
-            {
-                std::cerr << "[ERROR] Invalid statement type in interpreter\n";
-                continue;
-            }
+            if(!assign) {std::cerr << "[ERROR] Invalid statement type in interpreter\n"; continue;}
 
             Value result = evaluate(assign->value.get(), variables);
 
@@ -43,6 +39,11 @@ std::pair<std::string, Value> Interpreter::interpret(const std::vector<std::uniq
             auto* block = dynamic_cast<BlockStatement*>(stmt.get());
             if(!block) {std::cerr << "[ERROR] Invalid block cast\n"; continue;}
             interpret(block->statements);
+        }
+
+        if(stmt->type == StatementType::IF)
+        {
+            evaluate(stmt.get(), variables);
         }
     }
 

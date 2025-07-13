@@ -7,9 +7,12 @@
 
 #pragma once
 #include "../value/Value.h"
+#include "Statement.h"
 #include <memory>
 #include <string>
 #include <vector>
+
+struct Statement;
 
 enum class ExpressionType
 {
@@ -17,8 +20,6 @@ enum class ExpressionType
     BINARY,
     VARIABLE,
     UNARY,
-    IF,
-    BLOCK,
     CONSOLE_PRINT
 };
 
@@ -61,23 +62,6 @@ struct UnaryExpr : public Expression
     std::unique_ptr<Expression> right;
 
     UnaryExpr(char op, std::unique_ptr<Expression> right): Expression(ExpressionType::UNARY), op(op), right(std::move(right)) {}
-};
-
-struct IfExpr : public Expression
-{
-    std::unique_ptr<Expression> condition;
-    std::unique_ptr<Expression> then_branch;
-    std::unique_ptr<Expression> else_branch;
-
-    IfExpr(std::unique_ptr<Expression> cond, std::unique_ptr<Expression> then_b, std::unique_ptr<Expression> else_b = nullptr)
-        : Expression(ExpressionType::IF), condition(std::move(cond)), then_branch(std::move(then_b)), else_branch(std::move(else_b)) {}
-};
-
-struct BlockExpr : public Expression
-{
-    std::vector<std::unique_ptr<Expression>> statements;
-
-    explicit BlockExpr(std::vector<std::unique_ptr<Expression>> stmts) : Expression(ExpressionType::BLOCK), statements(std::move(stmts)) {}
 };
 
 struct ConsolePrintExpr : public Expression

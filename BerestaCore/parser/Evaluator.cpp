@@ -3,6 +3,7 @@
 //
 
 #include "Evaluator.h"
+#include "Expression.h"
 #include <iostream>
 #include <unordered_map>
 
@@ -53,47 +54,6 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
         std::cerr << "[ERROR] Variable not found: " << var->name << std::endl;
         return {};
     }
-    /*
-    if(expr->type == ExpressionType::BINARY)
-    {
-        auto* bin = dynamic_cast<BinaryExpr*>(expr);
-        Value left_val = evaluate(bin->left.get(), variables);
-        Value right_val = evaluate(bin->right.get(), variables);
-
-        if((left_val.type == ValueType::INTEGER|| left_val.type == ValueType::DOUBLE) && (right_val.type == ValueType::INTEGER || right_val.type == ValueType::DOUBLE))
-        {
-            double l = (left_val.type == ValueType::DOUBLE) ? std::get<double>(left_val.data) : std::get<int>(left_val.data);
-            double r = (right_val.type == ValueType::DOUBLE) ? std::get<double>(right_val.data) : std::get<int>(right_val.data);
-
-            switch(bin->op)
-            {
-                case '+': return Value(l + r);
-                case '-': return Value(l - r);
-                case '*': return Value(l * r);
-                case '/': return (r != 0.0) ? Value(l / r) : Value(0.0);
-                default: std::cerr << "[ERROR] Unknown binary operator: " << bin->op << std::endl; return {};
-            }
-        }
-
-        if(left_val.type == ValueType::INTEGER && right_val.type == ValueType::INTEGER)
-        {
-            int l = std::get<int>(left_val.data);
-            int r = std::get<int>(right_val.data);
-
-            switch (bin->op)
-            {
-                case '+': return Value(l + r);
-                case '-': return Value(l - r);
-                case '*': return Value(l * r);
-                case '/': return (r != 0) ? Value(l / r) : Value(0);
-                default: std::cerr << "[ERROR] Unknown binary operator: " << bin->op << std::endl; return {};
-            }
-        }
-
-        std::cerr << "[ERROR] Unsupported operand types" << std::endl;
-        return {};
-    }
-    */
 
     if(expr->type == ExpressionType::BINARY)
     {
@@ -135,35 +95,6 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
         return {};
     }
 
-    if(expr->type == ExpressionType::IF)
-    {
-        auto* if_expr = dynamic_cast<IfExpr*>(expr);
-        Value condition_val = evaluate(if_expr->condition.get(), variables);
-
-        bool condition_truthy = false;
-        if(condition_val.type == ValueType::INTEGER) {condition_truthy = std::get<int>(condition_val.data) != 0;}
-        else if(condition_val.type == ValueType::DOUBLE) {condition_truthy = std::get<double>(condition_val.data) != 0.0;}
-        else if(condition_val.type == ValueType::BOOLEAN) {condition_truthy = std::get<bool>(condition_val.data);}
-        else {std::cerr << "[ERROR] Invalid condition type in if-expression\n"; return {};}
-
-        if(condition_truthy) {return evaluate(if_expr->then_branch.get(), variables);}
-        else if(if_expr->else_branch) {return evaluate(if_expr->else_branch.get(), variables);}
-        else {return {};}
-    }
-
-    if(expr->type == ExpressionType::BLOCK)
-    {
-        auto* block = dynamic_cast<BlockExpr*>(expr);
-        Value result;
-
-        for(const auto& stmt : block->statements)
-        {
-            result = evaluate(stmt.get(), variables);
-        }
-
-        return result;
-    }
-
     if(expr->type == ExpressionType::CONSOLE_PRINT)
     {
         auto* print_expr = dynamic_cast<ConsolePrintExpr*>(expr);
@@ -173,5 +104,44 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
     }
 
     std::cerr << "[ERROR] Unknown expression type" << std::endl;
+    return {};
+}
+
+Value evaluate(Statement* stmt, std::unordered_map<std::string, Value>& variables)
+{
+    if(auto* assign = dynamic_cast<Assignment*>(stmt))
+    {
+        Value val = evaluate(assign->value.get(), variables);
+        variables[assign->name] = val;
+        return val;
+    }
+
+    if(auto* expr_stmt = dynamic_cast<ExpressionStatement*>(stmt)) {return evaluate(expr_stmt->expression.get(), variables);}
+
+    if(auto* block = dynamic_cast<BlockStatement*>(stmt))
+    {
+        Value result;
+        for(const auto& s : block->statements)
+        {
+            result = evaluate(s.get(), variables);
+        }
+        return result;
+    }
+
+    if(auto* if_stmt = dynamic_cast<IfStatement*>(stmt))
+    {
+        Value cond = evaluate(if_stmt->condition.get(), variables);
+
+        bool truthy = false;
+        if (cond.type == ValueType::INTEGER) truthy = std::get<int>(cond.data) != 0;
+        else if (cond.type == ValueType::DOUBLE) truthy = std::get<double>(cond.data) != 0.0;
+        else if (cond.type == ValueType::BOOLEAN) truthy = std::get<bool>(cond.data);
+        else {std::cerr << "[ERROR] Invalid type in if-statement condition\n"; return {};}
+
+        return truthy ? evaluate(if_stmt->then_branch.get(), variables)
+            : (if_stmt->else_branch ? evaluate(if_stmt->else_branch.get(), variables) : Value());
+    }
+
+    std::cerr << "[ERROR] Unknown statement type\n";
     return {};
 }

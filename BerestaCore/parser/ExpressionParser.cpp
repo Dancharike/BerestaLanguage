@@ -3,6 +3,8 @@
 //
 
 #include "ExpressionParser.h"
+#include "Statement.h"
+#include "Parser.h"
 
 ExpressionParser::ExpressionParser(const std::vector<Token> &tokens, size_t &position) : tokens(tokens), position(position) {}
 
@@ -11,28 +13,18 @@ Token ExpressionParser::peek() const
     return position < tokens.size() ? tokens[position] : Token(TokenType::END_OF_FILE, "", position);
 }
 
-Token ExpressionParser::advance()
-{
-    return tokens[position++];
-}
+Token ExpressionParser::advance() {return tokens[position++];}
 
 bool ExpressionParser::match(TokenType type)
 {
-    if(peek().type == type)
-    {
-        advance();
-        return true;
-    }
+    if(peek().type == type) {advance(); return true;}
     return false;
 }
 
 std::unique_ptr<Expression> ExpressionParser::parse_expression()
 {
-    auto function_expr = parse_functions();
-    if(function_expr) {return function_expr;}
-    if(match(TokenType::LEFT_BRACE)) {return parse_block();}
-
-    return parse_if_expression();
+    if(auto function_expr = parse_functions()) {return function_expr;}
+    return parse_logic();
 }
 
 std::unique_ptr<Expression> ExpressionParser::parse_functions()
@@ -49,46 +41,6 @@ std::unique_ptr<Expression> ExpressionParser::parse_functions()
     }
 
     return nullptr;
-}
-
-std::unique_ptr<Expression> ExpressionParser::parse_block()
-{
-    std::vector<std::unique_ptr<Expression>> statements;
-
-    while(!match(TokenType::RIGHT_BRACE) && peek().type != TokenType::END_OF_FILE)
-    {
-        auto stmt = parse_expression();
-        if(stmt) {statements.push_back(std::move(stmt));}
-        match(TokenType::SEMICOLON);
-    }
-
-    return std::make_unique<BlockExpr>(std::move(statements));
-}
-
-std::unique_ptr<Expression> ExpressionParser::parse_if_expression()
-{
-    if(match(TokenType::IF))
-    {
-        if(!match(TokenType::LEFT_PAREN)) {std::cerr << "Expected '(' after 'if'.\n"; return nullptr;}
-
-        auto condition = parse_expression();
-
-        if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Expected ')' after condition.\n"; return nullptr;}
-
-        auto then_branch = parse_expression();
-
-        std::unique_ptr<Expression> else_branch = nullptr;
-
-        if(match(TokenType::ELSE))
-        {
-            if(peek().type == TokenType::IF) {else_branch = parse_if_expression();}
-            else {else_branch = parse_expression();}
-        }
-
-        return std::make_unique<IfExpr>(std::move(condition), std::move(then_branch), std::move(else_branch));
-    }
-
-    return parse_logic();
 }
 
 std::unique_ptr<Expression> ExpressionParser::parse_logic()
@@ -159,17 +111,9 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
 
     if(match(TokenType::NUMBER))
     {
-        //return std::make_unique<NumberExpr>(std::stoi(tokens[position - 1].value));
-
         const std::string& val = tokens[position - 1].value;
-        if(val.find('.') != std::string::npos)
-        {
-            return std::make_unique<NumberExpr>(std::stod(val));
-        }
-        else
-        {
-            return std::make_unique<NumberExpr>(std::stoi(val));
-        }
+        if(val.find('.') != std::string::npos) {return std::make_unique<NumberExpr>(std::stod(val));}
+        else {return std::make_unique<NumberExpr>(std::stoi(val));}
     }
 
     if(match(TokenType::IDENTIFIER))
@@ -180,11 +124,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
     if(match(TokenType::LEFT_PAREN))
     {
         auto expr = parse_expression();
-        if (!match(TokenType::RIGHT_PAREN))
-        {
-            std::cerr << "Expected ')' after expression.\n";
-            return nullptr;
-        }
+        if (!match(TokenType::RIGHT_PAREN)) {std::cerr << "Expected ')' after expression.\n"; return nullptr;}
         return expr;
     }
 

@@ -10,8 +10,6 @@ add_library(BerestaCore STATIC
         token/Token.h
         value/Value.cpp
         value/Value.h
-        parser/Statement.h
-        parser/Expression.h
         parser/ExpressionParser.cpp
         parser/ExpressionParser.h
         parser/Evaluator.cpp
@@ -22,6 +20,10 @@ add_library(BerestaCore STATIC
         interpreter/Interpreter.h
         parser/StatementParser.cpp
         parser/StatementParser.h
+        parser/Expression.cpp
+        parser/Expression.h
+        parser/Statement.cpp
+        parser/Statement.h
 )
 
 target_include_directories(BerestaCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
