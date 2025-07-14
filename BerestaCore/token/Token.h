@@ -29,10 +29,10 @@ enum class TokenType
     GREATER_EQUAL,
     AND,
     OR,
+    COMMA,
     IF,
     ELSE,
     END_OF_FILE,
-    CONSOLE_PRINT,
     UNKNOWN
 };
 

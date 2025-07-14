@@ -24,6 +24,8 @@ add_library(BerestaCore STATIC
         parser/Expression.h
         parser/Statement.cpp
         parser/Statement.h
+        builtin/Builtins.cpp
+        builtin/Builtins.h
 )
 
 target_include_directories(BerestaCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

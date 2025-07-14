@@ -63,7 +63,6 @@ Token Lexer::next_token()
         if(ident == "or") return {TokenType::OR, ident, start_pos};
         if(ident == "if") return {TokenType::IF, ident, start_pos};
         if(ident == "else") return {TokenType::ELSE, ident, start_pos};
-        if(ident == "console_print") return {TokenType::CONSOLE_PRINT, ident, start_pos};
 
         return  {TokenType::IDENTIFIER, ident, start_pos};
     }
@@ -99,6 +98,7 @@ Token Lexer::next_token()
         case '!': return {TokenType::BANG, "!", start_pos};
         case '<': return {TokenType::LESS, "<", start_pos};
         case '>': return {TokenType::GREATER, ">", start_pos};
+        case ',': return {TokenType::COMMA, ",", start_pos};
         case ';': return {TokenType::SEMICOLON, ";", start_pos};
         case '(': return {TokenType::LEFT_PAREN, "(", start_pos};
         case ')': return {TokenType::RIGHT_PAREN, ")", start_pos};

@@ -4,6 +4,7 @@
 
 #include "Evaluator.h"
 #include "Expression.h"
+#include "../builtin/Builtins.h"
 #include <iostream>
 #include <unordered_map>
 
@@ -95,12 +96,24 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
         return {};
     }
 
-    if(expr->type == ExpressionType::CONSOLE_PRINT)
+    if(expr->type == ExpressionType::FUNCTION_CALL)
     {
-        auto* print_expr = dynamic_cast<ConsolePrintExpr*>(expr);
-        Value value = evaluate(print_expr->expression.get(), variables);
-        std::cout << value.to_string() << std::endl;
-        return value;
+        auto* call = dynamic_cast<FunctionCallExpr*>(expr);
+        auto* var_expr = dynamic_cast<VariableExpr*>(call->callee.get());
+
+        if(!var_expr) {std::cerr << "[ERROR] Only variable-style calls supported (e.g. foo(1))\n"; return {};}
+
+        std::string function_name = var_expr->name;
+
+        if(builtin_functions.find(function_name) == builtin_functions.end()) {std::cerr << "[ERROR] Unknown function: " << function_name << "\n"; return {};}
+
+        std::vector<Value> args;
+        for (auto& arg : call->arguments)
+        {
+            args.push_back(evaluate(arg.get(), variables));
+        }
+
+        return builtin_functions[function_name](args);
     }
 
     std::cerr << "[ERROR] Unknown expression type" << std::endl;
@@ -133,9 +146,9 @@ Value evaluate(Statement* stmt, std::unordered_map<std::string, Value>& variable
         Value cond = evaluate(if_stmt->condition.get(), variables);
 
         bool truthy = false;
-        if (cond.type == ValueType::INTEGER) truthy = std::get<int>(cond.data) != 0;
-        else if (cond.type == ValueType::DOUBLE) truthy = std::get<double>(cond.data) != 0.0;
-        else if (cond.type == ValueType::BOOLEAN) truthy = std::get<bool>(cond.data);
+        if(cond.type == ValueType::INTEGER) truthy = std::get<int>(cond.data) != 0;
+        else if(cond.type == ValueType::DOUBLE) truthy = std::get<double>(cond.data) != 0.0;
+        else if(cond.type == ValueType::BOOLEAN) truthy = std::get<bool>(cond.data);
         else {std::cerr << "[ERROR] Invalid type in if-statement condition\n"; return {};}
 
         return truthy ? evaluate(if_stmt->then_branch.get(), variables)

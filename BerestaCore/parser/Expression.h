@@ -20,7 +20,7 @@ enum class ExpressionType
     BINARY,
     VARIABLE,
     UNARY,
-    CONSOLE_PRINT
+    FUNCTION_CALL
 };
 
 struct Expression
@@ -64,11 +64,13 @@ struct UnaryExpr : public Expression
     UnaryExpr(char op, std::unique_ptr<Expression> right): Expression(ExpressionType::UNARY), op(op), right(std::move(right)) {}
 };
 
-struct ConsolePrintExpr : public Expression
+struct FunctionCallExpr : public Expression
 {
-    std::unique_ptr<Expression> expression;
+    std::unique_ptr<Expression> callee;
+    std::vector<std::unique_ptr<Expression>> arguments;
 
-    explicit ConsolePrintExpr(std::unique_ptr<Expression> expr) : Expression(ExpressionType::CONSOLE_PRINT), expression(std::move(expr)) {}
+    FunctionCallExpr(std::unique_ptr<Expression> expr, std::vector<std::unique_ptr<Expression>> args)
+        : Expression(ExpressionType::FUNCTION_CALL), callee(std::move(expr)), arguments(std::move(args)) {}
 };
 
 #endif //BERESTALANGUAGE_EXPRESSION_H

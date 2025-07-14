@@ -23,24 +23,7 @@ bool ExpressionParser::match(TokenType type)
 
 std::unique_ptr<Expression> ExpressionParser::parse_expression()
 {
-    if(auto function_expr = parse_functions()) {return function_expr;}
     return parse_logic();
-}
-
-std::unique_ptr<Expression> ExpressionParser::parse_functions()
-{
-    if(match(TokenType::CONSOLE_PRINT))
-    {
-        if(!match(TokenType::LEFT_PAREN)) {std::cerr << "Expected '(' after 'console_print'.\n"; return nullptr;}
-
-        auto expr = parse_expression();
-
-        if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Expected ')' after 'console_print'.\n"; return nullptr;}
-
-        return std::make_unique<ConsolePrintExpr>(std::move(expr));
-    }
-
-    return nullptr;
 }
 
 std::unique_ptr<Expression> ExpressionParser::parse_logic()
@@ -118,7 +101,28 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
 
     if(match(TokenType::IDENTIFIER))
     {
-        return std::make_unique<VariableExpr>(tokens[position - 1].value);
+        std::string name = tokens[position - 1].value;
+
+        if(peek().type == TokenType::LEFT_PAREN)
+        {
+            advance();
+            std::vector<std::unique_ptr<Expression>> args;
+
+            if(peek().type != TokenType::RIGHT_PAREN)
+            {
+                do
+                {
+                    args.push_back(parse_expression());
+                }
+                while(match(TokenType::COMMA));
+            }
+
+            if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Unexpected token: " << peek().value << "\n"; return nullptr;}
+
+            return std::make_unique<FunctionCallExpr>(std::make_unique<VariableExpr>(name), std::move(args));
+        }
+
+        return std::make_unique<VariableExpr>(name);
     }
 
     if(match(TokenType::LEFT_PAREN))
