@@ -113,7 +113,7 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
             args.push_back(evaluate(arg.get(), variables));
         }
 
-        return builtin_functions[function_name](args);
+        return builtin_functions.at(function_name)(args);
     }
 
     std::cerr << "[ERROR] Unknown expression type" << std::endl;
