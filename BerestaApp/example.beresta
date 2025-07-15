@@ -1,54 +1,57 @@
 /*
-a = 10;
-b = 20;
+// базовая математика
+    a = 10;
+    b = 20;
 
-c = (a + b) / -2;
-c = if (a > b) 1 else if (a == b) 2 else if (a < 0) 3 else 4;
+    c = (a + b) / -2;
 
-if(a < b and b > a)
-{
+// условия if()
+    if(a < b and b > a)
+    {
+        c = 1;
+        console_print(c);
+    }
+    else
+    {
+        c = 0;
+        console_print(c);
+    }
+
+    if(a > b or b < a)
+    {
+        c = 1;
+        console_print(c);
+    }
+    else
+    {
+        c = 0;
+        console_print(c);
+    }
+
+    if(a < b)
+    {
+        c = a + b;
+        console_print(c);
+    }
+
+    x = 5;
+    y = 10;
+
+    if(x > y)
+    {
+        console_print(x);
+    }
+    else if(x < y)
+    {
+        z = x + y;
+        console_print(z);
+    }
+
+// вызов и работа с функциями
     c = 1;
-    console_print(c);
-}
-else
-{
-    c = 0;
-    console_print(c);
-}
 
-if(a > b or b < a)
-{
-    c = 1;
-    console_print(c);
-}
-else
-{
-    c = 0;
-    console_print(c);
-}
-
-if(a < b)
-{
-    c = a + b;
-    console_print(c);
-}
-
-c = 1;
-console_print(c + 5);
-
-x = 5;
-y = 10;
-
-if(x > y)
-{
-    console_print(x);
-}
-else if(x < y)
-{
-    z = x + y;
-    console_print(z);
-}
-
-console_print(sqrt(9), sqrt(16 + 9));
+    console_print(c + 5);
+    console_print(sqr(9));
+    console_print(sqrt(9), sqrt(16 + 9));
 */
 
