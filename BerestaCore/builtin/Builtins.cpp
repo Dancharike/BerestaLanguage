@@ -3,9 +3,12 @@
 //
 
 #include "Builtins.h"
+#include "Matrix2D.h"
 #include <iostream>
 #include <cmath>
 #include <random>
+
+static Matrix2D current_matrix = Matrix2D::identity();
 
 const std::unordered_map<std::string, BuiltinFunction> builtin_functions =
 {
@@ -579,6 +582,60 @@ const std::unordered_map<std::string, BuiltinFunction> builtin_functions =
                 double radians = dir * (M_PI / 180.0);
                 double y = -len * std::sin(radians);
                 return Value(y);
+            }
+        },
+
+        // матрицы
+        {
+            "matrix_get", [](const std::vector<Value>& args) -> Value
+            {
+                std::vector<Value> result;
+                for(int i = 0; i < 6; ++i)
+                {
+                    result.emplace_back(current_matrix.data[i]);
+                }
+                return Value(result);
+            }
+        },
+        {
+            "matrix_set", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 6) {std::cerr << "[ERROR] matrix_set expects 6 numeric arguments\n"; return {};}
+                std::array<double, 6> new_data{};
+                for(int i = 0; i < 6; ++i)
+                {
+                    if(args[i].type != ValueType::DOUBLE && args[i].type != ValueType::INTEGER)
+                    {
+                        std::cerr << "[ERROR] matrix_set argument " << i + 1 << " must be numeric\n"; return {};
+                    }
+                    new_data[i] = (args[i].type == ValueType::DOUBLE) ? std::get<double>(args[i].data) : static_cast<double>(std::get<int>(args[i].data));
+                }
+                current_matrix.data = new_data;
+                return Value(true);
+            }
+        },
+        {
+            "matrix_build", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 5)
+                {
+                    std::cerr << "[ERROR] matrix_build expects 5 arguments (scale_x, scale_y, rotation_deg, translate_x, translate_y)\n"; return {};
+                }
+                auto get_number = [](const Value& val) -> double
+                {
+                    if(val.type == ValueType::DOUBLE) return std::get<double>(val.data);
+                    if(val.type == ValueType::INTEGER) return static_cast<double>(std::get<int>(val.data));
+                    throw std::runtime_error("Expected number (int or double)");
+                };
+                double sx = get_number(args[0]);
+                double sy = get_number(args[1]);
+                double rot = get_number(args[2]);
+                double tx = get_number(args[3]);
+                double ty = get_number(args[4]);
+                current_matrix = Matrix2D::build(sx, sy, rot, tx, ty);
+                std::vector<Value> result;
+                for(int i = 0; i < 6; ++i) {result.emplace_back(current_matrix.data[i]);}
+                return Value(result);
             }
         }
 

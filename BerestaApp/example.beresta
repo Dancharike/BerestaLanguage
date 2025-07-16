@@ -89,5 +89,13 @@
     console_print(point_distance(0, 0, 3, 4));
     console_print(lengthdir_x(64, 90));
     console_print(lengthdir_y(64, 90));
+
+    // матрицы
+    matrix_set(1, 0, 0, 1, 10, 20);
+    console_print(matrix_get());
+
+    matrix_build(1, 1, 45, 100, 200);
+    console_print(matrix_get());
 */
+
 

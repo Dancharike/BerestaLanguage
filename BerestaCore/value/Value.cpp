@@ -12,6 +12,7 @@ Value::Value(int val) : type(ValueType::INTEGER), data(val) {}
 Value::Value(double val) : type(ValueType::DOUBLE), data(val) {}
 Value::Value(bool val) : type(ValueType::BOOLEAN), data(val) {}
 Value::Value(const std::string& val) : type(ValueType::STRING), data(val) {}
+Value::Value(const std::vector<Value>& val) : type(ValueType::ARRAY), data(val) {}
 
 std::string Value::to_string() const
 {
@@ -35,6 +36,19 @@ std::string Value::to_string() const
         case ValueType::BOOLEAN: return std::get<bool>(data) ? "true" : "false";
 
         case ValueType::STRING: return std::get<std::string>(data);
+
+        case ValueType::ARRAY:
+        {
+            const auto& arr = std::get<std::vector<Value>>(data);
+            std::string result = "[";
+            for(size_t i = 0; i < arr.size(); ++i)
+            {
+                result += arr[i].to_string();
+                if(i + 1 < arr.size()) {result += ", ";}
+            }
+            result += "]";
+            return result;
+        }
 
         default: return "none";
     }

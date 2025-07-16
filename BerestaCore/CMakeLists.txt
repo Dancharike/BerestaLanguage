@@ -26,6 +26,8 @@ add_library(BerestaCore STATIC
         parser/Statement.h
         builtin/Builtins.cpp
         builtin/Builtins.h
+        builtin/Matrix2D.cpp
+        builtin/Matrix2D.h
 )
 
 target_include_directories(BerestaCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
