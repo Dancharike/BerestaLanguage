@@ -49,9 +49,45 @@
 
 // вызов и работа с функциями
     c = 1;
-
     console_print(c + 5);
+
+    // базовая игровая математика
     console_print(sqr(9));
     console_print(sqrt(9), sqrt(16 + 9));
+    console_print(frac(3.14));
+    console_print(mean(1, 2, 3, 4));
+    console_print(median(1, 9, 3, 7));
+    console_print(power(2, 10));
+    console_print(ln(25));
+    console_print(log2(1024));
+    console_print(log10(10000));
+    console_print(logn(5, 25));
+    console_print(clamp(17, 0, 10));
+    console_print(lerp(0.0, 100.0, 0.3));
+    console_print(choose(10, 20, 30, 40));
+    console_print(random(1));
+    console_print(random_range(0, 10));
+    console_print(int_random(5));
+    console_print(int_random_range(5, 15));
+
+    // тригонометрия
+    console_print(sin(3.14159 / 2));
+    console_print(cos(0));
+    console_print(tan(3.14159));
+    console_print(arcsin(0));
+    console_print(arccos(0));
+    console_print(arctan(0));
+    console_print(arctan2(1, 1));
+    console_print(dsin(90));
+    console_print(dcos(45));
+    console_print(dtan(45)); // 90 и 270 будут выдавать ошибку, ибо уходят к бесконечности
+    console_print(darcsin(-1));
+    console_print(darccos(-1));
+    console_print(darctan(1));
+    console_print(darctan2(1, 1));
+    console_print(point_direction(0, 0, 1, 0));
+    console_print(point_distance(0, 0, 3, 4));
+    console_print(lengthdir_x(64, 90));
+    console_print(lengthdir_y(64, 90));
 */
 

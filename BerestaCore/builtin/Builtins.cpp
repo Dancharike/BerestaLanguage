@@ -205,14 +205,16 @@ const std::unordered_map<std::string, BuiltinFunction> builtin_functions =
         {
             "clamp", [](const std::vector<Value>& args) -> Value
             {
-                if(args.size() != 3 ||(args[0].type != ValueType::DOUBLE && args[0].type != ValueType::INTEGER) ||
-                    args[1].type != ValueType::DOUBLE || args[2].type != ValueType::DOUBLE)
+                if(args.size() != 3 ||
+                   (args[0].type != ValueType::DOUBLE && args[0].type != ValueType::INTEGER) ||
+                   (args[1].type != ValueType::DOUBLE && args[1].type != ValueType::INTEGER) ||
+                   (args[2].type != ValueType::DOUBLE && args[2].type != ValueType::INTEGER))
                 {
                     std::cerr << "[ERROR] clamp expects 3 numeric arguments (val, min, max)\n"; return {};
                 }
                 double val = (args[0].type == ValueType::DOUBLE) ? std::get<double>(args[0].data) : std::get<int>(args[0].data);
-                double min = std::get<double>(args[1].data);
-                double max = std::get<double>(args[2].data);
+                double min = (args[1].type == ValueType::DOUBLE) ? std::get<double>(args[1].data) : std::get<int>(args[1].data);
+                double max = (args[2].type == ValueType::DOUBLE) ? std::get<double>(args[2].data) : std::get<int>(args[2].data);
                 return Value(std::clamp(val, min, max));
             }
         },
@@ -295,6 +297,288 @@ const std::unordered_map<std::string, BuiltinFunction> builtin_functions =
                 static std::mt19937 gen(rd());
                 std::uniform_int_distribution<int> dist(min_val, max_val);
                 return Value(dist(gen));
+            }
+        },
+
+        // тригонометрия
+        {
+            "sin", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 1 || (args[0].type != ValueType::DOUBLE && args[0].type != ValueType::INTEGER))
+                {
+                    std::cerr << "[ERROR] sin expects 1 numeric argument (in radians)\n"; return {};
+                }
+                double radians = (args[0].type == ValueType::DOUBLE) ? std::get<double>(args[0].data) : static_cast<double>(std::get<int>(args[0].data));
+                return Value(std::sin(radians));
+            }
+        },
+        {
+            "cos", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 1 || (args[0].type != ValueType::DOUBLE && args[0].type != ValueType::INTEGER))
+                {
+                    std::cerr << "[ERROR] cos expects 1 numeric argument (in radians)\n"; return {};
+                }
+                double radians = (args[0].type == ValueType::DOUBLE) ? std::get<double>(args[0].data) : static_cast<double>(std::get<int>(args[0].data));
+                return Value(std::cos(radians));
+            }
+        },
+        {
+            "tan", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 1 || (args[0].type != ValueType::DOUBLE && args[0].type != ValueType::INTEGER))
+                {
+                    std::cerr << "[ERROR] tan expects 1 numeric argument (in radians)\n"; return {};
+                }
+                double radians = (args[0].type == ValueType::DOUBLE) ? std::get<double>(args[0].data) : static_cast<double>(std::get<int>(args[0].data));
+                double result = std::tan(radians);
+                if(std::abs(result) < 1e-5) {result = 0.0;}
+                if(!std::isfinite(result)) {std::cerr << "[ERROR] tan argument results in infinity (asymptote)\n"; return {};}
+                return Value(result);
+            }
+        },
+        {
+            "arcsin", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 1 || (args[0].type != ValueType::DOUBLE && args[0].type != ValueType::INTEGER))
+                {
+                    std::cerr << "[ERROR] arcsin expects 1 numeric argument\n";return {};
+                }
+                double radians = (args[0].type == ValueType::DOUBLE) ? std::get<double>(args[0].data) : static_cast<double>(std::get<int>(args[0].data));
+                if(radians < -1.0 || radians > 1.0) {std::cerr << "[ERROR] arcsin domain error: input must be in range [-1, 1]\n"; return {};}
+                return Value(std::asin(radians));
+            }
+        },
+        {
+            "arccos", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 1 || (args[0].type != ValueType::DOUBLE && args[0].type != ValueType::INTEGER))
+                {
+                    std::cerr << "[ERROR] arccos expects 1 numeric argument\n";return {};
+                }
+                double radians = (args[0].type == ValueType::DOUBLE) ? std::get<double>(args[0].data) : static_cast<double>(std::get<int>(args[0].data));
+                if(radians < -1.0 || radians > 1.0) {std::cerr << "[ERROR] arccos domain error: input must be in range [-1, 1]\n"; return {};}
+                return Value(std::acos(radians));
+            }
+        },
+        {
+            "arctan", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 1 || (args[0].type != ValueType::DOUBLE && args[0].type != ValueType::INTEGER))
+                {
+                    std::cerr << "[ERROR] arctan expects 1 numeric argument\n";return {};
+                }
+                double radians = (args[0].type == ValueType::DOUBLE) ? std::get<double>(args[0].data) : static_cast<double>(std::get<int>(args[0].data));
+                return Value(std::atan(radians));
+            }
+        },
+        {
+            "arctan2", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 2 ||
+                (args[0].type != ValueType::DOUBLE && args[0].type != ValueType::INTEGER) ||
+                (args[1].type != ValueType::DOUBLE && args[1].type != ValueType::INTEGER))
+                {
+                    std::cerr << "[ERROR] arctan2 expects 2 numeric arguments (y, x)\n"; return {};
+                }
+                double y = (args[0].type == ValueType::DOUBLE) ? std::get<double>(args[0].data) : static_cast<double>(std::get<int>(args[0].data));
+                double x = (args[1].type == ValueType::DOUBLE) ? std::get<double>(args[1].data) : static_cast<double>(std::get<int>(args[1].data));
+                double result = std::atan2(y, x);
+                result = std::round(result * 100.0) / 100.0;
+                return Value(result);
+            }
+        },
+        {
+            "dsin", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 1 || (args[0].type != ValueType::DOUBLE && args[0].type != ValueType::INTEGER))
+                {
+                    std::cerr << "[ERROR] dsin expects 1 numeric argument (in degrees)\n"; return {};
+                }
+                double degrees = (args[0].type == ValueType::DOUBLE) ? std::get<double>(args[0].data) : static_cast<double>(std::get<int>(args[0].data));
+                double radians = degrees * (M_PI / 180.0);
+                double result = std::sin(radians);
+                if(std::abs(result) < 1e-5) {result = 0.0;}
+                result = std::round(result * 100.0) / 100.0;
+                return Value(result);
+            }
+        },
+        {
+            "dcos", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 1 || (args[0].type != ValueType::DOUBLE && args[0].type != ValueType::INTEGER))
+                {
+                    std::cerr << "[ERROR] dcos expects 1 numeric argument (in degrees)\n"; return {};
+                }
+                double degrees = (args[0].type == ValueType::DOUBLE) ? std::get<double>(args[0].data) : static_cast<double>(std::get<int>(args[0].data));
+                double radians = degrees * (M_PI / 180.0);
+                double result = std::cos(radians);
+                if(std::abs(result) < 1e-5) {result = 0.0;}
+                result = std::round(result * 100.0) / 100.0;
+                return Value(result);
+            }
+        },
+        {
+            "dtan", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 1 || (args[0].type != ValueType::DOUBLE && args[0].type != ValueType::INTEGER))
+                {
+                    std::cerr << "[ERROR] dtan expects 1 numeric argument (in degrees)\n"; return {};
+                }
+                double degrees = (args[0].type == ValueType::DOUBLE) ? std::get<double>(args[0].data) : static_cast<double>(std::get<int>(args[0].data));
+                double radians = degrees * (M_PI / 180.0);
+                double result = std::tan(radians);
+                if(std::fabs(std::fmod(std::abs(degrees), 180.0) - 90.0) < 1e-6) {std::cerr << "[ERROR] dtan asymptote at " << degrees << " degrees\n"; return {};}
+                if(!std::isfinite(result)) {std::cerr << "[ERROR] dtan argument results in infinity (asymptote)\n"; return {};}
+                if(std::abs(result) < 1e-5) {result = 0.0;}
+                result = std::round(result * 100.0) / 100.0;
+                return Value(result);
+            }
+        },
+        {
+            "darcsin", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 1 || (args[0].type != ValueType::DOUBLE && args[0].type != ValueType::INTEGER))
+                {
+                    std::cerr << "[ERROR] darcsin expects 1 numeric argument in range [-1, 1]\n"; return {};
+                }
+                double val = (args[0].type == ValueType::DOUBLE) ? std::get<double>(args[0].data) : static_cast<double>(std::get<int>(args[0].data));
+                if(val < -1.0 || val > 1.0) {std::cerr << "[ERROR] darcsin domain error: input must be in range [-1, 1]\n"; return {};}
+                double radians = std::asin(val);
+                double degrees = radians * (180.0 / M_PI);
+                degrees = std::round(degrees * 100.0) / 100.0;
+                return Value(degrees);
+            }
+        },
+        {
+            "darccos", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 1 || (args[0].type != ValueType::DOUBLE && args[0].type != ValueType::INTEGER))
+                {
+                    std::cerr << "[ERROR] darccos expects 1 numeric argument in range [-1, 1]\n"; return {};
+                }
+                double val = (args[0].type == ValueType::DOUBLE) ? std::get<double>(args[0].data) : static_cast<double>(std::get<int>(args[0].data));
+                if(val < -1.0 || val > 1.0) {std::cerr << "[ERROR] darccos domain error: input must be in range [-1, 1]\n"; return {};}
+                double radians = std::acos(val);
+                double degrees = radians * (180.0 / M_PI);
+                degrees = std::round(degrees * 100.0) / 100.0;
+                return Value(degrees);
+            }
+        },
+        {
+            "darctan", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 1 || (args[0].type != ValueType::DOUBLE && args[0].type != ValueType::INTEGER))
+                {
+                    std::cerr << "[ERROR] darctan expects 1 numeric argument\n"; return {};
+                }
+                double val = (args[0].type == ValueType::DOUBLE) ? std::get<double>(args[0].data) : static_cast<double>(std::get<int>(args[0].data));
+                double radians = std::atan(val);
+                double degrees = radians * (180.0 / M_PI);
+                degrees = std::round(degrees * 100.0) / 100.0;
+                return Value(degrees);
+            }
+        },
+        {
+            "darctan2", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 2 ||
+                   (args[0].type != ValueType::DOUBLE && args[0].type != ValueType::INTEGER) ||
+                   (args[1].type != ValueType::DOUBLE && args[1].type != ValueType::INTEGER))
+                {
+                    std::cerr << "[ERROR] darctan2 expects 2 numeric arguments (y, x)\n"; return {};
+                }
+                double y = (args[0].type == ValueType::DOUBLE) ? std::get<double>(args[0].data) : static_cast<double>(std::get<int>(args[0].data));
+                double x = (args[1].type == ValueType::DOUBLE) ? std::get<double>(args[1].data) : static_cast<double>(std::get<int>(args[1].data));
+                double radians = std::atan2(y, x);
+                double degrees = radians * (180.0 / M_PI);
+                degrees = std::round(degrees * 100.0) / 100.0;
+                return Value(degrees);
+            }
+        },
+        {
+            "point_direction", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 4) {std::cerr << "[ERROR] point_direction expects 4 arguments (x1, y1, x2, y2)\n"; return {};}
+                for(int i = 0; i < 4; ++i)
+                {
+                    if(args[i].type != ValueType::DOUBLE && args[i].type != ValueType::INTEGER)
+                    {
+                        std::cerr << "[ERROR] point_direction argument " << i + 1 << " must be numeric\n"; return {};
+                    }
+                }
+                auto to_double = [](const Value& v) -> double
+                {
+                    return (v.type == ValueType::DOUBLE) ? std::get<double>(v.data) : static_cast<double>(std::get<int>(v.data));
+                };
+                double x1 = to_double(args[0]);
+                double y1 = to_double(args[1]);
+                double x2 = to_double(args[2]);
+                double y2 = to_double(args[3]);
+                double dx = x2 - x1;
+                double dy = y2 - y1;
+                double radians = std::atan2(dy, dx);
+                double degrees = radians * (180.0 / M_PI);
+                degrees = std::round(degrees * 100.0) / 100.0;
+                return Value(degrees);
+            }
+        },
+        {
+            "point_distance", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 4) {std::cerr << "[ERROR] point_distance expects 4 arguments (x1, y1, x2, y2)\n"; return {};}
+                for(int i = 0; i < 4; ++i)
+                {
+                    if(args[i].type != ValueType::DOUBLE && args[i].type != ValueType::INTEGER)
+                    {
+                        std::cerr << "[ERROR] point_distance argument " << i + 1 << " must be numeric\n"; return {};
+                    }
+                }
+                auto to_double = [](const Value& v) -> double
+                {
+                    return (v.type == ValueType::DOUBLE) ? std::get<double>(v.data) : static_cast<double>(std::get<int>(v.data));
+                };
+                double x1 = to_double(args[0]);
+                double y1 = to_double(args[1]);
+                double x2 = to_double(args[2]);
+                double y2 = to_double(args[3]);
+                double dx = x2 - x1;
+                double dy = y2 - y1;
+                double distance = std::sqrt(dx * dx + dy * dy);
+                distance = std::round(distance * 100.0) / 100.0;
+                return Value(distance);
+            }
+        },
+        {
+            "lengthdir_x", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 2 ||
+                   (args[0].type != ValueType::DOUBLE && args[0].type != ValueType::INTEGER) ||
+                   (args[1].type != ValueType::DOUBLE && args[1].type != ValueType::INTEGER))
+                {
+                    std::cerr << "[ERROR] lengthdir_x expects 2 numeric arguments\n"; return {};
+                }
+                double len = (args[0].type == ValueType::DOUBLE) ? std::get<double>(args[0].data) : static_cast<double>(std::get<int>(args[0].data));
+                double dir = (args[1].type == ValueType::DOUBLE) ? std::get<double>(args[1].data) : static_cast<double>(std::get<int>(args[1].data));
+                double radians = dir * (M_PI / 180.0);
+                double x = len * std::cos(radians);
+                return Value(x);
+            }
+        },
+        {
+            "lengthdir_y", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 2 ||
+                   (args[0].type != ValueType::DOUBLE && args[0].type != ValueType::INTEGER) ||
+                   (args[1].type != ValueType::DOUBLE && args[1].type != ValueType::INTEGER))
+                {
+                    std::cerr << "[ERROR] lengthdir_y expects 2 numeric arguments\n"; return {};
+                }
+                double len = (args[0].type == ValueType::DOUBLE) ? std::get<double>(args[0].data) : static_cast<double>(std::get<int>(args[0].data));
+                double dir = (args[1].type == ValueType::DOUBLE) ? std::get<double>(args[1].data) : static_cast<double>(std::get<int>(args[1].data));
+                double radians = dir * (M_PI / 180.0);
+                double y = -len * std::sin(radians);
+                return Value(y);
             }
         }
 
