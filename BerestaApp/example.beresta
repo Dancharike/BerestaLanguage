@@ -96,6 +96,20 @@
 
     matrix_build(1, 1, 45, 100, 200);
     console_print(matrix_get());
+
+    matrix_identity();
+    console_print(matrix_get());
+
+    matrix_build(1, 1, 45, 100, 200);
+    matrix_multiply(1, 0, 0, 1, 10, 10);
+    console_print(matrix_get());
+
+    matrix_build(1, 1, 45, 100, 200);
+    matrix_inverse();
+    console_print(matrix_get());
+
+    matrix_build(2, 2, 0, 100, 100);
+    console_print(matrix_transform_vertex(10, 10));
 */
 
 

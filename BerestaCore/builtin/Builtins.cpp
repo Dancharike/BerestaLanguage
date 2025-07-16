@@ -637,6 +637,82 @@ const std::unordered_map<std::string, BuiltinFunction> builtin_functions =
                 for(int i = 0; i < 6; ++i) {result.emplace_back(current_matrix.data[i]);}
                 return Value(result);
             }
+        },
+        {
+            "matrix_identity", [](const std::vector<Value>& args) -> Value
+            {
+                current_matrix = Matrix2D::identity();
+                std::vector<Value> result;
+                for(int i = 0; i < 6; ++i) {result.emplace_back(current_matrix.data[i]);}
+                return Value(result);
+            }
+        },
+        {
+            "matrix_multiply", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 6)
+                {
+                    std::cerr << "[ERROR] matrix_multiply expects 6 arguments (a, b, c, d, tx, ty)\n";
+                    return {};
+                }
+                auto get_number = [](const Value& val) -> double
+                {
+                    if(val.type == ValueType::DOUBLE) return std::get<double>(val.data);
+                    if(val.type == ValueType::INTEGER) return static_cast<double>(std::get<int>(val.data));
+                    throw std::runtime_error("Expected number (int or double)");
+                };
+                Matrix2D other{{
+                    get_number(args[0]),
+                    get_number(args[1]),
+                    get_number(args[2]),
+                    get_number(args[3]),
+                    get_number(args[4]),
+                    get_number(args[5])
+                }};
+                current_matrix = current_matrix.multiply(other);
+                std::vector<Value> result;
+                for(int i = 0; i < 6; ++i)
+                {
+                    result.emplace_back(current_matrix.data[i]);
+                }
+                return Value(result);
+            }
+        },
+        {
+            "matrix_inverse", [](const std::vector<Value>& args) -> Value
+            {
+                if(!args.empty()) {std::cerr << "[ERROR] matrix_inverse expects no arguments\n"; return {};}
+                try
+                {
+                    current_matrix = current_matrix.inverse();
+                }
+                catch(const std::exception& e)
+                {
+                    std::cerr << "[ERROR] matrix_inverse failed: " << e.what() << "\n"; return {};
+                }
+                std::vector<Value> result;
+                for(int i = 0; i < 6; ++i)
+                {
+                    result.emplace_back(current_matrix.data[i]);
+                }
+                return Value(result);
+            }
+        },
+        {
+            "matrix_transform_vertex", [](const std::vector<Value>& args) -> Value
+            {
+                if(args.size() != 2) {std::cerr << "[ERROR] matrix_transform_vertex expects 2 arguments (x, y)\n";return {};}
+                auto get_number = [](const Value& val) -> double
+                {
+                    if(val.type == ValueType::DOUBLE) return std::get<double>(val.data);
+                    if(val.type == ValueType::INTEGER) return static_cast<double>(std::get<int>(val.data));
+                    throw std::runtime_error("Expected number (int or double)");
+                };
+                double x = get_number(args[0]);
+                double y = get_number(args[1]);
+                auto [tx, ty] = current_matrix.transform_vertex(x, y);
+                return Value(std::vector<Value>{Value(tx), Value(ty)});
+            }
         }
 
 };
