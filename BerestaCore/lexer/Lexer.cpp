@@ -63,6 +63,9 @@ Token Lexer::next_token()
         if(ident == "or") return {TokenType::OR, ident, start_pos};
         if(ident == "if") return {TokenType::IF, ident, start_pos};
         if(ident == "else") return {TokenType::ELSE, ident, start_pos};
+        if(ident == "while") return {TokenType::WHILE, ident, start_pos};
+        if(ident == "repeat") return {TokenType::REPEAT, ident, start_pos};
+        if(ident == "for") return {TokenType::FOR, ident, start_pos};
 
         return  {TokenType::IDENTIFIER, ident, start_pos};
     }

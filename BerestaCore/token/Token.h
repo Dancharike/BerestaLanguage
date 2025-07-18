@@ -32,6 +32,9 @@ enum class TokenType
     COMMA,
     IF,
     ELSE,
+    WHILE,
+    REPEAT,
+    FOR,
     END_OF_FILE,
     UNKNOWN
 };

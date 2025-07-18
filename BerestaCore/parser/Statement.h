@@ -18,6 +18,9 @@ enum class StatementType
     ASSIGNMENT,
     EXPRESSION,
     IF,
+    WHILE,
+    REPEAT,
+    FOR,
     BLOCK
 };
 
@@ -50,6 +53,32 @@ struct IfStatement : public Statement
     std::unique_ptr<Statement> else_branch;
 
     IfStatement(std::unique_ptr<Expression> cond, std::unique_ptr<Statement> then_b, std::unique_ptr<Statement> else_b = nullptr);
+};
+
+struct WhileStatement : public Statement
+{
+    std::unique_ptr<Expression> condition;
+    std::unique_ptr<Statement> body;
+
+    WhileStatement(std::unique_ptr<Expression> cond, std::unique_ptr<Statement> body);
+};
+
+struct RepeatStatement : public Statement
+{
+    std::unique_ptr<Expression> count;
+    std::unique_ptr<Statement> body;
+
+    RepeatStatement(std::unique_ptr<Expression> count, std::unique_ptr<Statement> body);
+};
+
+struct ForStatement : public Statement
+{
+    std::unique_ptr<Statement> initializer;
+    std::unique_ptr<Expression> condition;
+    std::unique_ptr<Statement> increment;
+    std::unique_ptr<Statement> body;
+
+    ForStatement(std::unique_ptr<Statement> init, std::unique_ptr<Expression> cond, std::unique_ptr<Statement> inc, std::unique_ptr<Statement> body);
 };
 
 struct BlockStatement : public Statement

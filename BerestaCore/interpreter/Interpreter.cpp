@@ -45,6 +45,21 @@ std::pair<std::string, Value> Interpreter::interpret(const std::vector<std::uniq
         {
             evaluate(stmt.get(), variables);
         }
+
+        if(stmt->type == StatementType::WHILE)
+        {
+            evaluate(stmt.get(), variables);
+        }
+
+        if(stmt->type == StatementType::REPEAT)
+        {
+            evaluate(stmt.get(), variables);
+        }
+
+        if(stmt->type == StatementType::FOR)
+        {
+            evaluate(stmt.get(), variables);
+        }
     }
 
     return {last_name, last_value};

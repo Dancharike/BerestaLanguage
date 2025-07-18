@@ -155,6 +155,69 @@ Value evaluate(Statement* stmt, std::unordered_map<std::string, Value>& variable
             : (if_stmt->else_branch ? evaluate(if_stmt->else_branch.get(), variables) : Value());
     }
 
+    if(auto* while_stmt = dynamic_cast<WhileStatement*>(stmt))
+    {
+        while(true)
+        {
+            Value cond = evaluate(while_stmt->condition.get(), variables);
+
+            bool truthy = false;
+            if(cond.type == ValueType::INTEGER) truthy = std::get<int>(cond.data) != 0;
+            else if(cond.type == ValueType::DOUBLE) truthy = std::get<double>(cond.data) != 0.0;
+            else if(cond.type == ValueType::BOOLEAN) truthy = std::get<bool>(cond.data);
+            else {std::cerr << "[ERROR] Invalid type in while-statement condition\n"; break;}
+
+            if(!truthy) {break;}
+            evaluate(while_stmt->body.get(), variables);
+        }
+        return {};
+    }
+
+    if(auto* repeat_stmt = dynamic_cast<RepeatStatement*>(stmt))
+    {
+        Value count_val = evaluate(repeat_stmt->count.get(), variables);
+        int count = 0;
+
+        if(count_val.type == ValueType::INTEGER) count = std::get<int>(count_val.data);
+        else if(count_val.type == ValueType::DOUBLE) count = static_cast<int>(std::get<double>(count_val.data));
+        else {std::cerr << "[ERROR] repeat count must be number\n"; return {};}
+
+        for(int i = 0; i < count; ++i)
+        {
+            evaluate(repeat_stmt->body.get(), variables);
+        }
+
+        return {};
+    }
+
+    if(auto* for_stmt = dynamic_cast<ForStatement*>(stmt))
+    {
+        if(for_stmt->initializer) {evaluate(for_stmt->initializer.get(), variables);}
+
+        while(true)
+        {
+            if(for_stmt->condition)
+            {
+                Value cond = evaluate(for_stmt->condition.get(), variables);
+                bool truthy = false;
+
+                if(cond.type == ValueType::BOOLEAN) truthy = std::get<bool>(cond.data);
+                else if(cond.type == ValueType::INTEGER) truthy = std::get<int>(cond.data) != 0;
+                else if(cond.type == ValueType::DOUBLE) truthy = std::get<double>(cond.data) != 0.0;
+                else {std::cerr << "[ERROR] Invalid type in for-loop condition\n"; break;}
+
+                if(!truthy) {break;}
+            }
+
+            evaluate(for_stmt->body.get(), variables);
+
+            if(for_stmt->increment) {evaluate(for_stmt->increment.get(), variables);}
+        }
+
+        return {};
+    }
+
+
     std::cerr << "[ERROR] Unknown statement type\n";
     return {};
 }

@@ -35,9 +35,11 @@ std::vector<std::unique_ptr<Statement>> Parser::parse()
 
 std::unique_ptr<Statement> Parser::parse_statement()
 {
-    match(TokenType::LET);
-
+    if(peek().type == TokenType::LET) {return parse_assignment();}
     if(peek().type == TokenType::IF) {return parse_if_statement();}
+    if(peek().type == TokenType::WHILE) {return parse_while_statement();}
+    if(peek().type == TokenType::REPEAT) {return parse_repeat_statement();}
+    //if(peek().type == TokenType::FOR) {return parse_for_statement();}
     if(peek().type == TokenType::LEFT_BRACE) {return parse_block();}
     if(peek().type == TokenType::IDENTIFIER && tokens[position + 1].type == TokenType::EQUALS) {return parse_assignment();}
 
@@ -53,6 +55,8 @@ std::unique_ptr<Statement> Parser::parse_statement()
 
 std::unique_ptr<Assignment> Parser::parse_assignment()
 {
+    match(TokenType::LET);
+
     Token name_token = advance();
     if(!match(TokenType::EQUALS)) {std::cerr << "Expected '=' after variable name\n"; return nullptr;}
 
@@ -73,7 +77,7 @@ std::unique_ptr<Statement> Parser::parse_if_statement()
     ExpressionParser expr_parser(tokens, position);
     auto condition = expr_parser.parse_expression();
 
-    if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Expected ')' after condition\n"; return nullptr;}
+    if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Expected ')' after 'if' condition\n"; return nullptr;}
 
     auto then_branch = parse_statement();
     std::unique_ptr<Statement> else_branch = nullptr;
@@ -82,6 +86,65 @@ std::unique_ptr<Statement> Parser::parse_if_statement()
 
     return std::make_unique<IfStatement>(std::move(condition), std::move(then_branch), std::move(else_branch));
 }
+
+std::unique_ptr<Statement> Parser::parse_while_statement()
+{
+    match(TokenType::WHILE);
+
+    if(!match(TokenType::LEFT_PAREN)) {std::cerr << "Expected '(' after 'while'\n"; return nullptr;}
+
+    ExpressionParser expr_parser(tokens, position);
+    auto condition = expr_parser.parse_expression();
+
+    if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Expected ')' after 'while' condition\n"; return nullptr;}
+
+    auto body = parse_statement();
+    return std::make_unique<WhileStatement>(std::move(condition), std::move(body));
+}
+
+std::unique_ptr<Statement> Parser::parse_repeat_statement()
+{
+    match(TokenType::REPEAT);
+
+    if(!match(TokenType::LEFT_PAREN)) {std::cerr << "Expected '(' after 'repeat'\n"; return nullptr;}
+
+    ExpressionParser expr_parser(tokens, position);
+    auto count_expr = expr_parser.parse_expression();
+
+    if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Expected ')' after 'repeat' condition\n"; return nullptr;}
+
+    auto body = parse_statement();
+    return std::make_unique<RepeatStatement>(std::move(count_expr), std::move(body));
+}
+/*
+std::unique_ptr<Statement> Parser::parse_for_statement()
+{
+    match(TokenType::FOR);
+
+    if(!match(TokenType::LEFT_PAREN)) {std::cerr << "Expected '(' after 'for'\n"; return nullptr;}
+
+    std::unique_ptr<Statement> initializer = nullptr;
+    if(peek().type != TokenType::SEMICOLON) {initializer = parse_statement();}
+    else {advance();}
+
+    ExpressionParser expr_parser1(tokens, position);
+    auto condition = expr_parser1.parse_expression();
+    position = expr_parser1.get_position();
+
+    if(!match(TokenType::SEMICOLON)) {std::cerr << "Expected ';' after condition in 'for'\n"; return nullptr;}
+
+    std::unique_ptr<Statement> increment = nullptr;
+    if(peek().type != TokenType::RIGHT_PAREN)
+    {
+        increment = parse_statement();
+    }
+
+    if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Expected ')' after 'for' loop clauses\n"; return nullptr;}
+
+    auto body = parse_statement();
+    return std::make_unique<ForStatement>(std::move(initializer), std::move(condition), std::move(increment), std::move(body));
+}
+*/
 
 std::unique_ptr<Statement> Parser::parse_block()
 {

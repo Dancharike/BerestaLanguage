@@ -47,6 +47,28 @@
         console_print(z);
     }
 
+// условие while()
+    i = 0;
+    while(i < 5)
+    {
+        console_print(i);
+        i = i + 1;
+    }
+
+// условие repeat()
+    i = 0;
+    repeat(5)
+    {
+        console_print(int_random_range(1, 10));
+        i = i + 1;
+    }
+
+// условие for()
+    for(let i = 0; i < 3; i = i + 1)
+    {
+        console_print(3);
+    }
+
 // вызов и работа с функциями
     c = 1;
     console_print(c + 5);

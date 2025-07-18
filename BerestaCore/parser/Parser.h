@@ -21,6 +21,9 @@ class Parser
 
     private:
         std::unique_ptr<Statement> parse_if_statement();
+        std::unique_ptr<Statement> parse_while_statement();
+        std::unique_ptr<Statement> parse_repeat_statement();
+        std::unique_ptr<Statement> parse_for_statement();
         std::unique_ptr<Statement> parse_block();
 
         [[nodiscard]] Token peek() const;
