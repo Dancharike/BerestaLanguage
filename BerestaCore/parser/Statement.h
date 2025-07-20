@@ -16,6 +16,7 @@ struct Expression;
 enum class StatementType
 {
     ASSIGNMENT,
+    ASSIGNMENT_STATEMENT,
     EXPRESSION,
     IF,
     WHILE,
@@ -37,6 +38,13 @@ struct Assignment : public Statement
     std::unique_ptr<Expression> value;
 
     Assignment(std::string name, std::unique_ptr<Expression> value);
+};
+
+struct AssignmentStatement : public Statement
+{
+    std::unique_ptr<Assignment> assignment;
+
+    explicit AssignmentStatement(std::unique_ptr<Assignment> assign);
 };
 
 struct ExpressionStatement : public Statement

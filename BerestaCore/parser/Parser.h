@@ -18,12 +18,14 @@ class Parser
         std::vector<std::unique_ptr<Statement>> parse();
         std::unique_ptr<Statement> parse_statement();
         std::unique_ptr<Assignment> parse_assignment();
+        std::unique_ptr<Assignment> parse_assignment_expression();
 
     private:
         std::unique_ptr<Statement> parse_if_statement();
         std::unique_ptr<Statement> parse_while_statement();
         std::unique_ptr<Statement> parse_repeat_statement();
         std::unique_ptr<Statement> parse_for_statement();
+        std::unique_ptr<Statement> parse_optional_assignment_or_expression();
         std::unique_ptr<Statement> parse_block();
 
         [[nodiscard]] Token peek() const;

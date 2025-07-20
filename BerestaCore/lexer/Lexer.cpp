@@ -97,6 +97,10 @@ Token Lexer::next_token()
 
     switch (advance())
     {
+        case '+': return {TokenType::PLUS, "+", start_pos};
+        case '-': return {TokenType::MINUS, "-", start_pos};
+        case '*': return {TokenType::STAR, "*", start_pos};
+        case '/': return {TokenType::SLASH, "/", start_pos};
         case '=': return {TokenType::EQUALS, "=", start_pos};
         case '!': return {TokenType::BANG, "!", start_pos};
         case '<': return {TokenType::LESS, "<", start_pos};

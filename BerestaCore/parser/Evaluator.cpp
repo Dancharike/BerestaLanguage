@@ -129,6 +129,12 @@ Value evaluate(Statement* stmt, std::unordered_map<std::string, Value>& variable
         return val;
     }
 
+    if(auto* assign_stmt = dynamic_cast<AssignmentStatement*>(stmt))
+    {
+        Value val = evaluate(assign_stmt->assignment.get(), variables);
+        return val;
+    }
+
     if(auto* expr_stmt = dynamic_cast<ExpressionStatement*>(stmt)) {return evaluate(expr_stmt->expression.get(), variables);}
 
     if(auto* block = dynamic_cast<BlockStatement*>(stmt))

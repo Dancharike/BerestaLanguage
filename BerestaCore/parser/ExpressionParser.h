@@ -16,6 +16,7 @@ class ExpressionParser
     public:
         explicit ExpressionParser(const std::vector<Token>& tokens, size_t& position);
         std::unique_ptr<Expression> parse_expression();
+        size_t& get_position() {return position;}
 
     private:
         const std::vector<Token>& tokens;

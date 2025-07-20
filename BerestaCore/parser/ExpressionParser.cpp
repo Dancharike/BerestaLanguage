@@ -59,11 +59,11 @@ std::unique_ptr<Expression> ExpressionParser::parse_term()
 {
     auto expr = parse_factor();
 
-    while(peek().value == "+" || peek().value == "-")
+    while(peek().type == TokenType::PLUS || peek().type == TokenType::MINUS)
     {
-        std::string op = advance().value;
+        Token op = advance();
         auto right = parse_factor();
-        expr = std::make_unique<BinaryExpr>(op, std::move(expr), std::move(right));
+        expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right));
     }
 
     return expr;
@@ -73,11 +73,11 @@ std::unique_ptr<Expression> ExpressionParser::parse_factor()
 {
     auto expr = parse_primary();
 
-    while(peek().value == "*" || peek().value == "/")
+    while(peek().type == TokenType::STAR || peek().type == TokenType::SLASH)
     {
-        std::string op = advance().value;
+        Token op = advance();
         auto right = parse_primary();
-        expr = std::make_unique<BinaryExpr>(op, std::move(expr), std::move(right));
+        expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right));
     }
 
     return expr;
@@ -85,11 +85,13 @@ std::unique_ptr<Expression> ExpressionParser::parse_factor()
 
 std::unique_ptr<Expression> ExpressionParser::parse_primary()
 {
-    if(peek().value == "-" || peek().value == "+")
+    if(peek().type == TokenType::MINUS || peek().type == TokenType::PLUS)
     {
-        char op = advance().value[0];
+        TokenType op_type = advance().type;
         auto right = parse_primary();
-        return std::make_unique<UnaryExpr>(op, std::move(right));
+
+        char op_char = (op_type == TokenType::MINUS) ? '-' : '+';
+        return std::make_unique<UnaryExpr>(op_char, std::move(right));
     }
 
     if(match(TokenType::NUMBER))
@@ -128,7 +130,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
     if(match(TokenType::LEFT_PAREN))
     {
         auto expr = parse_expression();
-        if (!match(TokenType::RIGHT_PAREN)) {std::cerr << "Expected ')' after expression.\n"; return nullptr;}
+        if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Expected ')' after expression.\n"; return nullptr;}
         return expr;
     }
 

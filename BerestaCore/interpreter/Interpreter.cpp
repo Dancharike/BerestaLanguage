@@ -28,6 +28,18 @@ std::pair<std::string, Value> Interpreter::interpret(const std::vector<std::uniq
             last_value = result;
         }
 
+        if(stmt->type == StatementType::ASSIGNMENT_STATEMENT)
+        {
+            auto* assign_stmt = dynamic_cast<AssignmentStatement*>(stmt.get());
+            if(!assign_stmt) {std::cerr << "[ERROR] Invalid assignment statement cast\n"; continue;}
+
+            Value result = evaluate(assign_stmt->assignment->value.get(), variables);
+            variables[assign_stmt->assignment->name] = result;
+
+            last_name = assign_stmt->assignment->name;
+            last_value = result;
+        }
+
         if(stmt->type == StatementType::EXPRESSION)
         {
             auto* expr_stmt = dynamic_cast<ExpressionStatement*>(stmt.get());

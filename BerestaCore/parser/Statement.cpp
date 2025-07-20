@@ -8,6 +8,9 @@
 Assignment::Assignment(std::string name, std::unique_ptr<Expression> value)
     : Statement(StatementType::ASSIGNMENT), name(std::move(name)), value(std::move(value)) {}
 
+AssignmentStatement::AssignmentStatement(std::unique_ptr<Assignment> assign)
+    : Statement(StatementType::ASSIGNMENT_STATEMENT), assignment(std::move(assign)) {}
+
 ExpressionStatement::ExpressionStatement(std::unique_ptr<Expression> expr)
     : Statement(StatementType::EXPRESSION), expression(std::move(expr)) {}
 
