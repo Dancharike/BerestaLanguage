@@ -27,6 +27,8 @@ class Parser
         std::unique_ptr<Statement> parse_for_statement();
         std::unique_ptr<Statement> parse_optional_assignment_or_expression();
         std::unique_ptr<Statement> parse_block();
+        std::unique_ptr<Statement> parse_function_statement();
+        std::unique_ptr<Statement> parse_return_statement();
 
         [[nodiscard]] Token peek() const;
         Token advance();

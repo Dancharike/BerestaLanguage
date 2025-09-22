@@ -235,7 +235,7 @@ const std::unordered_map<std::string, BuiltinFunction> builtin_functions =
             }
         },
         {
-            "choose", [](const std::vector<Value>& args) -> Value
+            "choose_from", [](const std::vector<Value>& args) -> Value
             {
                 if(args.empty()) {std::cerr << "[ERROR] choose expects at least 1 argument\n"; return {};}
                 static std::random_device rd;

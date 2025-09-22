@@ -42,6 +42,8 @@ std::unique_ptr<Statement> Parser::parse_statement()
     if(peek().type == TokenType::FOR) {return parse_for_statement();}
     if(peek().type == TokenType::LEFT_BRACE) {return parse_block();}
     if(peek().type == TokenType::IDENTIFIER && tokens[position + 1].type == TokenType::EQUALS) {return parse_assignment();}
+    if(peek().type == TokenType::FUNCTION) return {parse_function_statement()};
+    if(peek().type == TokenType::RETURN) return {parse_return_statement()};
 
     ExpressionParser expr_parser(tokens, position);
     auto expr = expr_parser.parse_expression();
@@ -132,8 +134,6 @@ std::unique_ptr<Statement> Parser::parse_repeat_statement()
     return std::make_unique<RepeatStatement>(std::move(count_expr), std::move(body));
 }
 
-
-
 std::unique_ptr<Statement> Parser::parse_for_statement()
 {
     match(TokenType::FOR);
@@ -212,4 +212,44 @@ std::unique_ptr<Statement> Parser::parse_optional_assignment_or_expression()
 
     position = expr_parser.get_position();
     return std::make_unique<ExpressionStatement>(std::move(expr));
+}
+
+std::unique_ptr<Statement> Parser::parse_function_statement()
+{
+    match(TokenType::FUNCTION);
+
+    if(peek().type != TokenType::IDENTIFIER) {std::cerr << "Expected function name\n"; return nullptr;}
+
+    std::string name = advance().value;
+
+    if(!match(TokenType::LEFT_PAREN)) {std::cerr << "Expected '('\n"; return nullptr;}
+
+    std::vector<std::string> params;
+
+    if(peek().type != TokenType::RIGHT_PAREN)
+    {
+        do
+        {
+            if(peek().type != TokenType::IDENTIFIER) {std::cerr << "Expected parameter name\n"; return nullptr;}
+
+            params.push_back(advance().value);
+        } while(match(TokenType::COMMA));
+    }
+
+    if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Expected ')'\n"; return nullptr;}
+
+    auto body = parse_block();
+    return std::make_unique<FunctionStatement>(name, std::move(params), std::move(body));
+}
+
+std::unique_ptr<Statement> Parser::parse_return_statement()
+{
+    match(TokenType::RETURN);
+    ExpressionParser expr_parser(tokens, position);
+    auto val = expr_parser.parse_expression();
+    position = expr_parser.get_position();
+
+    if(!match(TokenType::SEMICOLON)) {std::cerr << "Expected ';' after return value\n"; return nullptr;}
+
+    return std::make_unique<ReturnStatement>(std::move(val));
 }

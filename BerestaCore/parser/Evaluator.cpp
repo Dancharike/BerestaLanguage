@@ -8,6 +8,13 @@
 #include <iostream>
 #include <unordered_map>
 
+static const std::unordered_map<std::string, FunctionStatement*>* g_user_functions = nullptr;
+
+void set_user_functions(const std::unordered_map<std::string, FunctionStatement*>* ptr)
+{
+    g_user_functions = ptr;
+}
+
 Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& variables)
 {
     if(expr->type == ExpressionType::UNARY)
@@ -105,15 +112,38 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
 
         std::string function_name = var_expr->name;
 
-        if(builtin_functions.find(function_name) == builtin_functions.end()) {std::cerr << "[ERROR] Unknown function: " << function_name << "\n"; return {};}
-
         std::vector<Value> args;
-        for (auto& arg : call->arguments)
+        for(auto& arg : call->arguments)
         {
             args.push_back(evaluate(arg.get(), variables));
         }
 
-        return builtin_functions.at(function_name)(args);
+        auto builtin_it = builtin_functions.find(function_name);
+        if(builtin_it != builtin_functions.end()) {return builtin_it->second(args);}
+
+        if(!g_user_functions) {std::cerr << "[ERROR] Unknown function: " << function_name << "\n"; return {};}
+
+        auto user_it = g_user_functions->find(function_name);
+        if(user_it == g_user_functions->end()) {std::cerr << "[ERROR] Unknown function: " << function_name << "\n"; return {};}
+
+        FunctionStatement* fn = user_it->second;
+
+        if(args.size() != fn->parameters.size()) {std::cerr << "[ERROR] Function " << function_name << " expects " << fn->parameters.size() << " args, got " << args.size() << "\n"; return {};}
+
+        std::unordered_map<std::string, Value> local = variables;
+        for(size_t i = 0; i < args.size(); ++i)
+        {
+            local[fn->parameters[i]] = args[i];
+        }
+
+        try
+        {
+            return evaluate(fn->body.get(), local);
+        }
+        catch(const ReturnException& e)
+        {
+            return e.value;
+        }
     }
 
     std::cerr << "[ERROR] Unknown expression type" << std::endl;
@@ -223,6 +253,11 @@ Value evaluate(Statement* stmt, std::unordered_map<std::string, Value>& variable
         return {};
     }
 
+    if(auto* ret = dynamic_cast<ReturnStatement*>(stmt))
+    {
+        Value v = evaluate(ret->value.get(), variables);
+        throw ReturnException(v);
+    }
 
     std::cerr << "[ERROR] Unknown statement type\n";
     return {};

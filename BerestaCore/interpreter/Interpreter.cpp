@@ -11,6 +11,8 @@
 
 std::pair<std::string, Value> Interpreter::interpret(const std::vector<std::unique_ptr<Statement>>& statements)
 {
+    set_user_functions(&user_functions);
+
     std::string last_name;
     Value last_value;
 
@@ -71,6 +73,12 @@ std::pair<std::string, Value> Interpreter::interpret(const std::vector<std::uniq
         if(stmt->type == StatementType::FOR)
         {
             evaluate(stmt.get(), variables);
+        }
+
+        if(stmt->type == StatementType::FUNCTION)
+        {
+            auto* func = dynamic_cast<FunctionStatement*>(stmt.get());
+            user_functions[func->name] = func;
         }
     }
 

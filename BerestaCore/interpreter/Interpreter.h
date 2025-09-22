@@ -15,6 +15,7 @@ class Interpreter
 {
     public:
         std::pair<std::string, Value> interpret(const std::vector<std::unique_ptr<Statement>>& statements);
+        std::unordered_map<std::string, FunctionStatement*> user_functions;
         void print_variables() const;
         void run(const std::string& code);
 

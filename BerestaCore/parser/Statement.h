@@ -22,7 +22,9 @@ enum class StatementType
     WHILE,
     REPEAT,
     FOR,
-    BLOCK
+    BLOCK,
+    FUNCTION,
+    RETURN
 };
 
 struct Statement
@@ -94,6 +96,22 @@ struct BlockStatement : public Statement
     std::vector<std::unique_ptr<Statement>> statements;
 
     explicit BlockStatement(std::vector<std::unique_ptr<Statement>> stmt) : Statement(StatementType::BLOCK), statements(std::move(stmt)) {}
+};
+
+struct FunctionStatement : public Statement
+{
+    std::string name;
+    std::vector<std::string> parameters;
+    std::unique_ptr<Statement> body;
+
+    FunctionStatement(std::string name, std::vector<std::string> params, std::unique_ptr<Statement> body);
+};
+
+struct ReturnStatement : public Statement
+{
+    std::unique_ptr<Expression> value;
+
+    explicit ReturnStatement(std::unique_ptr<Expression> val);
 };
 
 #endif //BERESTALANGUAGE_STATEMENT_H

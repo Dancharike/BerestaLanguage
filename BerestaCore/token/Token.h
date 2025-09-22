@@ -39,6 +39,8 @@ enum class TokenType
     WHILE,
     REPEAT,
     FOR,
+    FUNCTION,
+    RETURN,
     END_OF_FILE,
     UNKNOWN
 };

@@ -86,7 +86,7 @@
     console_print(logn(5, 25));
     console_print(clamp(17, 0, 10));
     console_print(lerp(0.0, 100.0, 0.3));
-    console_print(choose(10, 20, 30, 40));
+    console_print(choose_from(10, 20, 30, 40));
     console_print(random(1));
     console_print(random_range(0, 10));
     console_print(int_random(5));
@@ -132,6 +132,27 @@
 
     matrix_build(2, 2, 0, 100, 100);
     console_print(matrix_transform_vertex(10, 10));
+
+// обработка пользовательских функций
+    function add(a, b)
+    {
+        return a + b;
+    }
+
+    let answer = add(2, 3);
+
+    console_print(answer);
+
+// рабочая рекурсия в функциях
+    function fact(n)
+    {
+        if(n <= 1) {return 1;}
+        return n * fact(n - 1);
+    }
+
+    let answer = fact(5);
+
+    console_print(answer);
 */
 
 
