@@ -20,6 +20,7 @@ enum class ExpressionType
     BINARY,
     VARIABLE,
     UNARY,
+    STRING,
     FUNCTION_CALL
 };
 
@@ -62,6 +63,13 @@ struct UnaryExpr : public Expression
     std::unique_ptr<Expression> right;
 
     UnaryExpr(char op, std::unique_ptr<Expression> right): Expression(ExpressionType::UNARY), op(op), right(std::move(right)) {}
+};
+
+struct StringExpr : public Expression
+{
+    std::string value;
+
+    explicit StringExpr(std::string val) : Expression(ExpressionType::STRING), value(std::move(val)) {}
 };
 
 struct FunctionCallExpr : public Expression

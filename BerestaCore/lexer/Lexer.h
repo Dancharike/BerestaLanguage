@@ -24,6 +24,7 @@ class Lexer
         char advance();
         void skip_whitespace();
         Token next_token();
+        Token read_string(size_t start_pos);
 };
 
 

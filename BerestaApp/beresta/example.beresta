@@ -134,17 +134,16 @@
     console_print(matrix_transform_vertex(10, 10));
 
 // обработка пользовательских функций
-    function add(a, b)
+    public function add(a, b)
     {
         return a + b;
     }
 
     let answer = add(2, 3);
-
     console_print(answer);
 
 // рабочая рекурсия в функциях
-    function fact(n)
+    public function fact(n)
     {
         if(n <= 1) {return 1;}
         return n * fact(n - 1);
@@ -153,6 +152,20 @@
     let answer = fact(5);
 
     console_print(answer);
+
+// работающий вызов публичных функций из других файлов в папке проекта, смотреть calculations.beresta
+    let answer = calculate(5, 10, 2);
+    console_print(answer);
+
+// функции теперь могут быть без возврата, тогда просто в консоли будет это отображено
+// к этому добавил обработку строк, как новый динамический тип
+    private function greet(name)
+    {
+        console_print("Hello " + name);
+    }
+
+    let x = greet("Denis");
+    //console_print(x);
 */
 
 

@@ -101,6 +101,11 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
         else {return std::make_unique<NumberExpr>(std::stoi(val));}
     }
 
+    if(match(TokenType::STRING))
+    {
+        return std::make_unique<StringExpr>(tokens[position - 1].value);
+    }
+
     if(match(TokenType::IDENTIFIER))
     {
         std::string name = tokens[position - 1].value;

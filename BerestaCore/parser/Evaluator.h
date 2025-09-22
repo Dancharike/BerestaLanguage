@@ -18,7 +18,12 @@ struct ReturnException
     explicit ReturnException(Value v) : value(std::move(v)) {}
 };
 
-void set_user_functions(const std::unordered_map<std::string, FunctionStatement*>* ptr);
+using PublicFunctionMap = std::unordered_map<std::string, std::pair<FunctionStatement*, std::string>>;
+using PrivateFunctionMap = std::unordered_map<std::string, std::unordered_map<std::string, FunctionStatement*>>;
+
+void set_public_functions(const PublicFunctionMap* ptr);
+void set_private_functions(const PrivateFunctionMap* ptr);
+void set_current_file(const std::string& filename);
 
 Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& variables);
 Value evaluate(Statement* stmt, std::unordered_map<std::string, Value>& variables);

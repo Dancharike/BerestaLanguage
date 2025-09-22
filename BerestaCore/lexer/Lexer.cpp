@@ -4,6 +4,7 @@
 
 #include "Lexer.h"
 #include <cctype>
+#include <iostream>
 
 Lexer::Lexer(std::string src) : source(std::move(src)), position(0) {}
 
@@ -66,6 +67,8 @@ Token Lexer::next_token()
         if(ident == "while") return {TokenType::WHILE, ident, start_pos};
         if(ident == "repeat") return {TokenType::REPEAT, ident, start_pos};
         if(ident == "for") return {TokenType::FOR, ident, start_pos};
+        if(ident == "public") return {TokenType::PUBLIC, ident, start_pos};
+        if(ident == "private") return {TokenType::PRIVATE, ident, start_pos};
         if(ident == "function") return {TokenType::FUNCTION, ident, start_pos};
         if(ident == "return") return {TokenType::RETURN, ident, start_pos};
 
@@ -90,6 +93,7 @@ Token Lexer::next_token()
         return {TokenType::NUMBER, number, start_pos};
     }
 
+    if(current == '"') {return read_string(start_pos);}
     if(current == '=' && source[position + 1] == '=') {advance(); advance(); return {TokenType::EQUAL_EQUAL, "==", start_pos};}
     if(current == '!' && source[position + 1] == '=') {advance(); advance(); return {TokenType::BANG_EQUAL, "!=", start_pos};}
     if(current == '<' && source[position + 1] == '=') {advance(); advance(); return {TokenType::LESS_EQUAL, "<=", start_pos};}
@@ -97,7 +101,7 @@ Token Lexer::next_token()
     if(current == '&' && source[position + 1] == '&') {advance(); advance(); return {TokenType::AND, "&&", start_pos};}
     if(current == '|' && source[position + 1] == '|') {advance(); advance(); return {TokenType::OR, "||", start_pos};}
 
-    switch (advance())
+    switch(advance())
     {
         case '+': return {TokenType::PLUS, "+", start_pos};
         case '-': return {TokenType::MINUS, "-", start_pos};
@@ -129,4 +133,20 @@ std::vector<Token> Lexer::tokenize()
     }
 
     return tokens;
+}
+
+Token Lexer::read_string(size_t start_pos)
+{
+    advance();
+    std::string str;
+
+    while(true)
+    {
+        char c = peek();
+        if(c == '\0') {std::cerr << "[ERROR] Unterminated string literal\n"; break;}
+        if(c == '"') {advance(); break;}
+        else {str += advance();}
+    }
+
+    return {TokenType::STRING, str, start_pos};
 }

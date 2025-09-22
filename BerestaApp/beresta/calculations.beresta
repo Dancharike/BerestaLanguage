@@ -1,0 +1,12 @@
+// скрипт держащий в себе публичные и приватные функции для вызова из других классов
+
+public function calculate(x, y, z)
+{
+    let answer_01 = divide(x, y);
+    return z + answer_01;
+}
+
+private function divide(x, y)
+{
+    return x / y;
+}

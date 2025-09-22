@@ -2,18 +2,13 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <filesystem>
 #include "../BerestaCore/interpreter/Interpreter.h"
-#include "../BerestaCore/lexer/Lexer.h"
-#include "../BerestaCore/parser/Parser.h"
 
 std::string read_file(const std::string& filepath)
 {
     std::ifstream file(filepath);
-    if(!file.is_open())
-    {
-        std::cerr << "Error : cannot open the file: " << filepath << std::endl;
-        exit(1);
-    }
+    if(!file.is_open()) {std::cerr << "Error : cannot open the file: " << filepath << std::endl; exit(1);}
 
     std::stringstream buffer;
     buffer << file.rdbuf();
@@ -22,46 +17,25 @@ std::string read_file(const std::string& filepath)
 
 int main(int argc, char* argv[])
 {
-    if(argc < 2)
-    {
-        std::cerr << "Using : BerestaApp <file_path.beresta>" << std::endl;
-        return 1;
-    }
+    if(argc < 2) {std::cerr << "Using : BerestaApp <entry_file.beresta>" << std::endl; return 1;}
 
-    std::string code = read_file(argv[1]);
+    std::filesystem::path entry_path = argv[1];
+    if(!std::filesystem::exists(entry_path)) {std::cerr << "Entry file not found: " << entry_path.string() << std::endl; return 1;}
+
+    std::filesystem::path root_dir = entry_path.parent_path();
 
     Interpreter interpreter;
-    interpreter.run(code);
-}
 
-/*
-int main()
-{
-    Interpreter interpreter;
-
-    std::cout << "BerestaLang REPL. Type 'exit' to quit.\n";
-    while(true)
+    for(const auto& p : std::filesystem::directory_iterator(root_dir))
     {
-        std::cout << ">>> ";
-        std::string line;
-        std::getline(std::cin, line);
-
-        if (line == "exit") {break;}
-        if (line.empty()) {continue;}
-
-        Lexer lexer(line);
-        auto tokens = lexer.tokenize();
-
-        Parser parser(tokens);
-        auto statements = parser.parse();
-
-        auto [name, value] = interpreter.interpret(statements);
-        if (!name.empty())
+        if(!p.is_regular_file()) {continue;}
+        if(p.path().extension() == ".beresta")
         {
-            std::cout << " " << name << " = " << value.to_string() << std::endl;
+            std::string code = read_file(p.path().string());
+            interpreter.register_file(p.path().filename().string(), code);
         }
     }
 
+    interpreter.run_project(entry_path.filename().string());
     return 0;
 }
-*/

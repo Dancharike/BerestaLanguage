@@ -42,6 +42,7 @@ std::unique_ptr<Statement> Parser::parse_statement()
     if(peek().type == TokenType::FOR) {return parse_for_statement();}
     if(peek().type == TokenType::LEFT_BRACE) {return parse_block();}
     if(peek().type == TokenType::IDENTIFIER && tokens[position + 1].type == TokenType::EQUALS) {return parse_assignment();}
+    if(peek().type == TokenType::PUBLIC || peek().type == TokenType::PRIVATE) {return parse_function_statement();}
     if(peek().type == TokenType::FUNCTION) return {parse_function_statement()};
     if(peek().type == TokenType::RETURN) return {parse_return_statement()};
 
@@ -216,7 +217,12 @@ std::unique_ptr<Statement> Parser::parse_optional_assignment_or_expression()
 
 std::unique_ptr<Statement> Parser::parse_function_statement()
 {
-    match(TokenType::FUNCTION);
+    FunctionVisibility visibility = FunctionVisibility::PUBLIC;
+
+    if(match(TokenType::PUBLIC)) {visibility = FunctionVisibility::PUBLIC;}
+    else if(match(TokenType::PRIVATE)) {visibility = FunctionVisibility::PRIVATE;}
+
+    if(!match(TokenType::FUNCTION)) {std::cerr << "Expected 'function' after visibility modifier\n"; return nullptr;}
 
     if(peek().type != TokenType::IDENTIFIER) {std::cerr << "Expected function name\n"; return nullptr;}
 
@@ -239,17 +245,27 @@ std::unique_ptr<Statement> Parser::parse_function_statement()
     if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Expected ')'\n"; return nullptr;}
 
     auto body = parse_block();
-    return std::make_unique<FunctionStatement>(name, std::move(params), std::move(body));
+    return std::make_unique<FunctionStatement>(visibility, name, std::move(params), std::move(body));
 }
 
 std::unique_ptr<Statement> Parser::parse_return_statement()
 {
-    match(TokenType::RETURN);
-    ExpressionParser expr_parser(tokens, position);
-    auto val = expr_parser.parse_expression();
-    position = expr_parser.get_position();
+    if(match(TokenType::RETURN))
+    {
+        std::unique_ptr<Expression> val;
 
-    if(!match(TokenType::SEMICOLON)) {std::cerr << "Expected ';' after return value\n"; return nullptr;}
+        if(peek().type != TokenType::SEMICOLON && peek().type != TokenType::RIGHT_BRACE && peek().type != TokenType::END_OF_FILE)
+        {
+            ExpressionParser expr_parser(tokens, position);
+            val = expr_parser.parse_expression();
+        }
 
-    return std::make_unique<ReturnStatement>(std::move(val));
+        if(!match(TokenType::SEMICOLON))
+        {
+            std::cerr << "[ERROR] Missing ';' after return\n";
+        }
+
+        return std::make_unique<ReturnStatement>(std::move(val));
+    }
+
 }

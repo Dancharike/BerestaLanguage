@@ -50,6 +50,6 @@ std::string Value::to_string() const
             return result;
         }
 
-        default: return "none";
+        default: return "none (no return)";
     }
 }

@@ -27,6 +27,12 @@ enum class StatementType
     RETURN
 };
 
+enum class FunctionVisibility
+{
+    PUBLIC,
+    PRIVATE
+};
+
 struct Statement
 {
     StatementType type;
@@ -100,11 +106,12 @@ struct BlockStatement : public Statement
 
 struct FunctionStatement : public Statement
 {
+    FunctionVisibility visibility;
     std::string name;
     std::vector<std::string> parameters;
     std::unique_ptr<Statement> body;
 
-    FunctionStatement(std::string name, std::vector<std::string> params, std::unique_ptr<Statement> body);
+    FunctionStatement(FunctionVisibility vis, std::string name, std::vector<std::string> params, std::unique_ptr<Statement> body);
 };
 
 struct ReturnStatement : public Statement
