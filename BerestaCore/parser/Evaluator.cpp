@@ -23,6 +23,18 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
         auto* unary = dynamic_cast<UnaryExpr*>(expr);
         Value right_val = evaluate(unary->right.get(), variables);
 
+        if(unary->op == '!')
+        {
+            bool val = false;
+
+            if(right_val.type == ValueType::BOOLEAN) {val = std::get<bool>(right_val.data);}
+            else if(right_val.type == ValueType::INTEGER) {val = std::get<int>(right_val.data) != 0;}
+            else if(right_val.type == ValueType::DOUBLE) {val = std::get<double>(right_val.data) != 0.0;}
+            else if(right_val.type == ValueType::STRING) {val = !right_val.to_string().empty();}
+
+            return Value(!val);
+        }
+
         if(right_val.type == ValueType::DOUBLE)
         {
             double val = std::get<double>(right_val.data);
@@ -108,6 +120,12 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
         return Value(s->value);
     }
 
+    if(expr->type == ExpressionType::BOOLEAN)
+    {
+        auto* b = dynamic_cast<BoolExpr*>(expr);
+        return Value(b->value);
+    }
+
     if(expr->type == ExpressionType::FUNCTION_CALL)
     {
         auto* call = dynamic_cast<FunctionCallExpr*>(expr);
@@ -116,7 +134,10 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
         std::string function_name = var_expr->name;
 
         std::vector<Value> args;
-        for(auto& arg : call->arguments) { args.push_back(evaluate(arg.get(), variables)); }
+        for(auto& arg : call->arguments)
+        {
+            args.push_back(evaluate(arg.get(), variables));
+        }
 
         auto itb = builtin_functions.find(function_name);
         if(itb != builtin_functions.end()) { return itb->second(args); }

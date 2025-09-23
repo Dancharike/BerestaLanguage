@@ -21,6 +21,7 @@ enum class ExpressionType
     VARIABLE,
     UNARY,
     STRING,
+    BOOLEAN,
     FUNCTION_CALL
 };
 
@@ -70,6 +71,13 @@ struct StringExpr : public Expression
     std::string value;
 
     explicit StringExpr(std::string val) : Expression(ExpressionType::STRING), value(std::move(val)) {}
+};
+
+struct BoolExpr : public Expression
+{
+    bool value;
+
+    explicit BoolExpr(bool v) : Expression(ExpressionType::BOOLEAN), value(v) {}
 };
 
 struct FunctionCallExpr : public Expression

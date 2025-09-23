@@ -33,9 +33,9 @@ std::string Value::to_string() const
             return result;
         }
 
-        case ValueType::BOOLEAN: return std::get<bool>(data) ? "true" : "false";
+        case ValueType::BOOLEAN: {return std::get<bool>(data) ? "true" : "false";}
 
-        case ValueType::STRING: return std::get<std::string>(data);
+        case ValueType::STRING: {return std::get<std::string>(data);}
 
         case ValueType::ARRAY:
         {

@@ -85,14 +85,23 @@ std::unique_ptr<Expression> ExpressionParser::parse_factor()
 
 std::unique_ptr<Expression> ExpressionParser::parse_primary()
 {
-    if(peek().type == TokenType::MINUS || peek().type == TokenType::PLUS)
+    if(peek().type == TokenType::BANG || peek().type == TokenType::MINUS || peek().type == TokenType::PLUS)
     {
-        TokenType op_type = advance().type;
-        auto right = parse_primary();
+        Token op = advance();
 
-        char op_char = (op_type == TokenType::MINUS) ? '-' : '+';
+        auto right = parse_primary();
+        char op_char;
+
+        if(op.type == TokenType::BANG) {op_char = '!';}
+        else if(op.type == TokenType::MINUS) {op_char = '-';}
+        else {op_char = '+';}
+
         return std::make_unique<UnaryExpr>(op_char, std::move(right));
     }
+
+    if(match(TokenType::TRUE)) {return std::make_unique<BoolExpr>(true);}
+
+    if(match(TokenType::FALSE)) {return std::make_unique<BoolExpr>(false);}
 
     if(match(TokenType::NUMBER))
     {
@@ -101,10 +110,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
         else {return std::make_unique<NumberExpr>(std::stoi(val));}
     }
 
-    if(match(TokenType::STRING))
-    {
-        return std::make_unique<StringExpr>(tokens[position - 1].value);
-    }
+    if(match(TokenType::STRING)) {return std::make_unique<StringExpr>(tokens[position - 1].value);}
 
     if(match(TokenType::IDENTIFIER))
     {

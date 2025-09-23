@@ -15,6 +15,8 @@ enum class TokenType
     IDENTIFIER,
     NUMBER,
     STRING,
+    TRUE,
+    FALSE,
     EQUALS,
     SEMICOLON,
     PLUS,
