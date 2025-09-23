@@ -10,3 +10,14 @@ private function divide(x, y)
 {
     return x / y;
 }
+
+// функции без модификатора видимости всегда определяются как публичные, чисто для удобства и скорости написания
+function add(a, b)
+{
+    return a + b;
+}
+
+private function secret_mult(a, b)
+{
+    return a * b;
+}

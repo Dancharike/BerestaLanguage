@@ -5,8 +5,8 @@
 #include "Statement.h"
 #include "Expression.h"
 
-Assignment::Assignment(std::string name, std::unique_ptr<Expression> value)
-    : Statement(StatementType::ASSIGNMENT), name(std::move(name)), value(std::move(value)) {}
+Assignment::Assignment(bool is_let, std::string name, std::unique_ptr<Expression> value)
+    : Statement(StatementType::ASSIGNMENT), is_let(is_let), name(std::move(name)), value(std::move(value)) {}
 
 AssignmentStatement::AssignmentStatement(std::unique_ptr<Assignment> assign)
     : Statement(StatementType::ASSIGNMENT_STATEMENT), assignment(std::move(assign)) {}

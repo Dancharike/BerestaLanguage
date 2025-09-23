@@ -42,10 +42,11 @@ struct Statement
 
 struct Assignment : public Statement
 {
+    bool is_let;
     std::string name;
     std::unique_ptr<Expression> value;
 
-    Assignment(std::string name, std::unique_ptr<Expression> value);
+    Assignment(bool is_let, std::string name, std::unique_ptr<Expression> value);
 };
 
 struct AssignmentStatement : public Statement

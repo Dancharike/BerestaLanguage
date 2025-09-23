@@ -58,9 +58,11 @@ std::unique_ptr<Statement> Parser::parse_statement()
 
 std::unique_ptr<Assignment> Parser::parse_assignment()
 {
-    match(TokenType::LET);
+    bool is_let = match(TokenType::LET);
 
     Token name_token = advance();
+    if(name_token.type != TokenType::IDENTIFIER) {std::cerr << "Expected variable name\n"; return nullptr;}
+
     if(!match(TokenType::EQUALS)) {std::cerr << "Expected '=' after variable name\n"; return nullptr;}
 
     ExpressionParser expr_parser(tokens, position);
@@ -69,21 +71,23 @@ std::unique_ptr<Assignment> Parser::parse_assignment()
 
     if(!match(TokenType::SEMICOLON)) {std::cerr << "Expected ';' after expression\n"; return nullptr;}
 
-    return std::make_unique<Assignment>(name_token.value, std::move(expr));
+    return std::make_unique<Assignment>(is_let, name_token.value, std::move(expr));
 }
 
 std::unique_ptr<Assignment> Parser::parse_assignment_expression()
 {
-    match(TokenType::LET);
+    bool is_let = match(TokenType::LET);
 
     Token name_token = advance();
+    if(name_token.type != TokenType::IDENTIFIER) {std::cerr << "Expected variable name\n"; return nullptr;}
+
     if(!match(TokenType::EQUALS)) {std::cerr << "Expected '=' after variable name\n"; return nullptr;}
 
     ExpressionParser expr_parser(tokens, position);
     auto expr = expr_parser.parse_expression();
-    position = expr_parser.get_position(); // обязательно
+    position = expr_parser.get_position();
 
-    return std::make_unique<Assignment>(name_token.value, std::move(expr));
+    return std::make_unique<Assignment>(is_let, name_token.value, std::move(expr));
 }
 
 std::unique_ptr<Statement> Parser::parse_if_statement()

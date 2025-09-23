@@ -66,44 +66,13 @@ std::pair<std::string, Value> Interpreter::interpret(const std::vector<std::uniq
 
     for(const auto& stmt : statements)
     {
-        if(stmt->type == StatementType::ASSIGNMENT)
-        {
-            auto* assign = dynamic_cast<Assignment*>(stmt.get());
-            if(!assign) {std::cerr << "[ERROR] Invalid statement type in interpreter\n"; continue;}
-            Value result = evaluate(assign->value.get(), variables);
-            variables[assign->name] = result;
-            last_name = assign->name;
-            last_value = result;
-        }
+        if (stmt->type == StatementType::FUNCTION) {continue;}
 
-        if(stmt->type == StatementType::ASSIGNMENT_STATEMENT)
-        {
-            auto* assign_stmt = dynamic_cast<AssignmentStatement*>(stmt.get());
-            if(!assign_stmt) {std::cerr << "[ERROR] Invalid assignment statement cast\n"; continue;}
-            Value result = evaluate(assign_stmt->assignment->value.get(), variables);
-            variables[assign_stmt->assignment->name] = result;
-            last_name = assign_stmt->assignment->name;
-            last_value = result;
-        }
+        Value result = evaluate(stmt.get(), env_stack.back());
+        last_value = result;
 
-        if(stmt->type == StatementType::EXPRESSION)
-        {
-            auto* expr_stmt = dynamic_cast<ExpressionStatement*>(stmt.get());
-            if(expr_stmt) {evaluate(expr_stmt->expression.get(), variables);}
-        }
-
-        if(stmt->type == StatementType::BLOCK)
-        {
-            auto* block = dynamic_cast<BlockStatement*>(stmt.get());
-            if(!block) {std::cerr << "[ERROR] Invalid block cast\n"; continue;}
-            interpret(block->statements);
-        }
-
-        if(stmt->type == StatementType::IF) {evaluate(stmt.get(), variables);}
-        if(stmt->type == StatementType::WHILE) {evaluate(stmt.get(), variables);}
-        if(stmt->type == StatementType::REPEAT) {evaluate(stmt.get(), variables);}
-        if(stmt->type == StatementType::FOR) {evaluate(stmt.get(), variables);}
-        if(stmt->type == StatementType::FUNCTION) {}
+        if(auto* assign = dynamic_cast<Assignment*>(stmt.get())) {last_name = assign->name;}
+        else if(auto* assign_stmt = dynamic_cast<AssignmentStatement*>(stmt.get())) {last_name = assign_stmt->assignment->name;}
     }
 
     return {last_name, last_value};

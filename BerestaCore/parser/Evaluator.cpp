@@ -51,15 +51,6 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
 
     if(expr->type == ExpressionType::NUMBER) {return dynamic_cast<NumberExpr*>(expr)->value;}
 
-    if(expr->type == ExpressionType::VARIABLE)
-    {
-        auto* var = dynamic_cast<VariableExpr*>(expr);
-        auto it = variables.find(var->name);
-        if (it != variables.end()) { return it->second; }
-        std::cerr << "[ERROR] Variable not found: " << var->name << std::endl;
-        return {};
-    }
-
     if(expr->type == ExpressionType::BINARY)
     {
         auto* bin = dynamic_cast<BinaryExpr*>(expr);
@@ -105,6 +96,12 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
         return {};
     }
 
+    if(expr->type == ExpressionType::VARIABLE)
+    {
+        auto* var = dynamic_cast<VariableExpr*>(expr);
+        return get_var(var->name);
+    }
+
     if(expr->type == ExpressionType::STRING)
     {
         auto* s = dynamic_cast<StringExpr*>(expr);
@@ -134,20 +131,22 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
                 {
                     FunctionStatement* fn = itp->second;
                     if(args.size() != fn->parameters.size()) {std::cerr << "[ERROR] Function " << function_name << " expects " << fn->parameters.size() << " args, got " << args.size() << "\n"; return {};}
-                    std::unordered_map<std::string, Value> local = variables;
 
+                    push_scope();
                     for(size_t i = 0; i < args.size(); ++i)
                     {
-                        local[fn->parameters[i]] = args[i];
+                        set_var(fn->parameters[i], args[i], true);
                     }
 
                     try
                     {
-                        evaluate(fn->body.get(), local);
+                        evaluate(fn->body.get(), env_stack.back());
+                        pop_scope();
                         return {};
                     }
                     catch(const ReturnException& e)
                     {
+                        pop_scope();
                         return e.value;
                     }
                 }
@@ -164,22 +163,25 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
 
                 if(args.size() != fn->parameters.size()) {std::cerr << "[ERROR] Function " << function_name << " expects " << fn->parameters.size() << " args, got " << args.size() << "\n"; return {};}
 
-                std::unordered_map<std::string, Value> local = variables;
-                for(size_t i = 0; i < args.size(); ++i)
-                {
-                    local[fn->parameters[i]] = args[i];
-                }
-
                 std::string prev = g_current_file;
                 g_current_file = def_file;
+
+                push_scope();
+                for(size_t i = 0; i < args.size(); ++i)
+                {
+                    set_var(fn->parameters[i], args[i], true);
+                }
+
                 try
                 {
-                    Value res = evaluate(fn->body.get(), local);
+                    Value res = evaluate(fn->body.get(), env_stack.back());
+                    pop_scope();
                     g_current_file = prev;
                     return res;
                 }
                 catch(const ReturnException& e)
                 {
+                    pop_scope();
                     g_current_file = prev;
                     return e.value;
                 }
@@ -198,8 +200,8 @@ Value evaluate(Statement* stmt, std::unordered_map<std::string, Value>& variable
 {
     if(auto* assign = dynamic_cast<Assignment*>(stmt))
     {
-        Value val = evaluate(assign->value.get(), variables);
-        variables[assign->name] = val;
+        Value val = evaluate(assign->value.get(), env_stack.back());
+        set_var(assign->name, val, assign->is_let);
         return val;
     }
 
