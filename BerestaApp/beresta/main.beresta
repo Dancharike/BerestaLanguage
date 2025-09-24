@@ -1,7 +1,0 @@
-is_flag = true;
-
-if(int_random(1) == 0) {is_flag = !is_flag;}
-else {is_flag = is_flag;}
-
-if(!is_flag) {console_print("No Hello!");}
-else {console_print("Yes hello this time!");}

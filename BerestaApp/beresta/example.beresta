@@ -166,6 +166,66 @@
 
     let x = greet("Denis");
     //console_print(x);
+
+// обработка флагов добавлена
+    is_flag = true;
+
+    if(int_random(1) == 0) {is_flag = !is_flag;}
+    else {is_flag = is_flag;}
+
+    if(!is_flag) {console_print("No Hello!");}
+    else {console_print("Yes hello this time!");}
+
+// работа с массивами
+    let a = [1, "hi", true, [10, 20]];
+
+    // умеет в базовый доступ по индексу
+    console_print(a[0]);
+    console_print(a[1]);
+    console_print(a[2]);
+    console_print(a[3]);
+    console_print(a[3][1]); // вложенные массивы
+    console_print(a[1.9]); // double приводится к int (из 1.9 в 1)
+
+    a[1] = "hello"; // присутствует присваивание
+    a[3][0] = 42; // можно поменять элементы вложенных массивов
+    a[5] = 777; // можно расширить границы массива к большему кол-ву элементов
+    a[4][2] = 9; // создание нового элемента и вложение в него нового массива с индексом 2
+
+    console_print(a);
+
+    // можно создать массив и вложить в него ещё несколько, что автоматически расширит его
+    let b = [];
+    b[2][1][0] = "x";
+    console_print(b);
+
+    // базовый пример функции с массивом
+    public function make_arr()
+    {
+        return [5, 6, 7];
+    }
+    console_print(make_arr()[1]);
+
+    // есть возможность заполнять массив в циклах
+    let c = [];
+    for(let k = 0; k < 3; k = k + 1)
+    {
+        c[k] = k * 10;
+    }
+    console_print(c);
+
+    c[5] = 50; // авто-расширение
+    console_print(c);
+
+    // посчитает сумму первых трёх элементов циклом
+    let sum = 0;
+    let j = 0;
+    while(j < 3)
+    {
+        sum = sum + c[j];
+        j = j + 1;
+    }
+    console_print(sum);
 */
 
 

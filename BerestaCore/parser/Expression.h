@@ -22,7 +22,9 @@ enum class ExpressionType
     UNARY,
     STRING,
     BOOLEAN,
-    FUNCTION_CALL
+    FUNCTION_CALL,
+    ARRAY_LITERAL,
+    INDEX
 };
 
 struct Expression
@@ -42,7 +44,6 @@ struct NumberExpr : public Expression
 
 struct BinaryExpr : public Expression
 {
-    //char op;  // пришлось заменить на строчку, ибо в противном случае невозможно будет реализовать операторы сравнения
     std::string op;
     std::unique_ptr<Expression> left;
     std::unique_ptr<Expression> right;
@@ -87,6 +88,21 @@ struct FunctionCallExpr : public Expression
 
     FunctionCallExpr(std::unique_ptr<Expression> expr, std::vector<std::unique_ptr<Expression>> args)
         : Expression(ExpressionType::FUNCTION_CALL), callee(std::move(expr)), arguments(std::move(args)) {}
+};
+
+struct ArrayLiteralExpr : public Expression
+{
+    std::vector<std::unique_ptr<Expression>> elements;
+
+    explicit ArrayLiteralExpr(std::vector<std::unique_ptr<Expression>> elems) : Expression(ExpressionType::ARRAY_LITERAL), elements(std::move(elems)) {}
+};
+
+struct IndexExpr : public Expression
+{
+    std::unique_ptr<Expression> array;
+    std::unique_ptr<Expression> index;
+
+    IndexExpr(std::unique_ptr<Expression> arr, std::unique_ptr<Expression> idx) : Expression(ExpressionType::INDEX), array(std::move(arr)), index(std::move(idx)) {}
 };
 
 #endif //BERESTALANGUAGE_EXPRESSION_H

@@ -213,6 +213,38 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
         return {};
     }
 
+    if(expr->type == ExpressionType::ARRAY_LITERAL)
+    {
+        auto* arr = dynamic_cast<ArrayLiteralExpr*>(expr);
+        std::vector<Value> values;
+
+        for(auto& e : arr->elements)
+        {
+            values.push_back(evaluate(e.get(), variables));
+        }
+
+        return Value(values);
+    }
+
+    if(expr->type == ExpressionType::INDEX)
+    {
+        auto* idx = dynamic_cast<IndexExpr*>(expr);
+        Value arr_val = evaluate(idx->array.get(), variables);
+        Value index_val = evaluate(idx->index.get(), variables);
+
+        if(arr_val.type != ValueType::ARRAY) {std::cerr << "[ERROR] Indexing non-array value\n"; return {};}
+
+        int i = 0;
+        if(index_val.type == ValueType::INTEGER) {i = std::get<int>(index_val.data);}
+        else if(index_val.type == ValueType::DOUBLE) {i = static_cast<int>(std::get<double>(index_val.data));}
+        else {std::cerr << "[ERROR] Array index must be a number (int or double)\n"; return {};}
+
+        auto& arr = std::get<std::vector<Value>>(arr_val.data);
+        if(i < 0 || i >= static_cast<int>(arr.size())) {std::cerr << "[ERROR] Array index out of bounds\n"; return {};}
+
+        return arr[i];
+    }
+
     std::cerr << "[ERROR] Unknown expression type" << std::endl;
     return {};
 }
@@ -324,6 +356,57 @@ Value evaluate(Statement* stmt, std::unordered_map<std::string, Value>& variable
     {
         Value v = ret->value ? evaluate(ret->value.get(), variables) : Value();
         throw ReturnException(v);
+    }
+
+    if (auto* ia = dynamic_cast<IndexAssignment*>(stmt))
+    {
+        std::vector<int> indices;
+        Expression* cur = ia->target.get();
+
+        while(auto* idx = dynamic_cast<IndexExpr*>(cur))
+        {
+            Value iv = evaluate(idx->index.get(), variables);
+            int i = 0;
+            if(iv.type == ValueType::INTEGER) {i = std::get<int>(iv.data);}
+            else if(iv.type == ValueType::DOUBLE) {i = static_cast<int>(std::get<double>(iv.data));}
+            else {std::cerr << "[ERROR] Array index must be a number (int or double)\n"; return {};}
+
+            indices.push_back(i);
+            cur = idx->array.get();
+        }
+
+        auto* var = dynamic_cast<VariableExpr*>(cur);
+        if(!var) {std::cerr << "[ERROR] Left side of indexed assignment must be a variable\n"; return {};}
+
+        Value arr_val = get_var(var->name);
+        if(arr_val.type != ValueType::ARRAY) {std::cerr << "[ERROR] Variable '" << var->name << "' is not an array\n"; return {};}
+
+        std::reverse(indices.begin(), indices.end());
+        Value new_val = evaluate(ia->value.get(), variables);
+
+        Value* current = &arr_val;
+        for(size_t level = 0; level < indices.size(); ++level)
+        {
+            int i = indices[level];
+            if(i < 0) {std::cerr << "[ERROR] Negative index in array assignment\n"; return {};}
+
+            if(current->type != ValueType::ARRAY) {*current = Value(std::vector<Value>{});}
+
+            auto& vec = std::get<std::vector<Value>>(current->data);
+
+            if(static_cast<size_t>(i) >= vec.size()) {vec.resize(static_cast<size_t>(i) + 1, Value());}
+
+            if(level + 1 == indices.size()) {vec[static_cast<size_t>(i)] = new_val;}
+            else
+            {
+                Value& slot = vec[static_cast<size_t>(i)];
+                if(slot.type != ValueType::ARRAY) {slot = Value(std::vector<Value>{});}
+                current = &slot;
+            }
+        }
+
+        set_var(var->name, arr_val, false);
+        return new_val;
     }
 
     std::cerr << "[ERROR] Unknown statement type\n";

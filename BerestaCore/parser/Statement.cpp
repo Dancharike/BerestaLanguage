@@ -31,3 +31,6 @@ FunctionStatement::FunctionStatement(FunctionVisibility vis,std::string name, st
 
 ReturnStatement::ReturnStatement(std::unique_ptr<Expression> val)
     : Statement(StatementType::RETURN), value(std::move(val)) {}
+
+IndexAssignment::IndexAssignment(std::unique_ptr<Expression> t, std::unique_ptr<Expression> v)
+    : Statement(StatementType::INDEX_ASSIGNMENT), target(std::move(t)), value(std::move(v)) {}

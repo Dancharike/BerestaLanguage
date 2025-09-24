@@ -17,6 +17,7 @@ enum class StatementType
 {
     ASSIGNMENT,
     ASSIGNMENT_STATEMENT,
+    INDEX_ASSIGNMENT,
     EXPRESSION,
     IF,
     WHILE,
@@ -120,6 +121,14 @@ struct ReturnStatement : public Statement
     std::unique_ptr<Expression> value;
 
     explicit ReturnStatement(std::unique_ptr<Expression> val);
+};
+
+struct IndexAssignment : public Statement
+{
+    std::unique_ptr<Expression> target;
+    std::unique_ptr<Expression> value;
+
+    IndexAssignment(std::unique_ptr<Expression> t, std::unique_ptr<Expression> v);
 };
 
 #endif //BERESTALANGUAGE_STATEMENT_H

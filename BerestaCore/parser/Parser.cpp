@@ -41,7 +41,12 @@ std::unique_ptr<Statement> Parser::parse_statement()
     if(peek().type == TokenType::REPEAT) {return parse_repeat_statement();}
     if(peek().type == TokenType::FOR) {return parse_for_statement();}
     if(peek().type == TokenType::LEFT_BRACE) {return parse_block();}
-    if(peek().type == TokenType::IDENTIFIER && tokens[position + 1].type == TokenType::EQUALS) {return parse_assignment();}
+    if(peek().type == TokenType::IDENTIFIER && tokens[position + 1].type == TokenType::LEFT_BRACKET) {return parse_index_assignment();}
+    if(peek().type == TokenType::IDENTIFIER && tokens[position + 1].type == TokenType::EQUALS)
+    {
+        auto a = parse_assignment();
+        return std::make_unique<AssignmentStatement>(std::move(a));
+    }
     if(peek().type == TokenType::PUBLIC || peek().type == TokenType::PRIVATE) {return parse_function_statement();}
     if(peek().type == TokenType::FUNCTION) return {parse_function_statement()};
     if(peek().type == TokenType::RETURN) return {parse_return_statement()};
@@ -143,46 +148,26 @@ std::unique_ptr<Statement> Parser::parse_for_statement()
 {
     match(TokenType::FOR);
 
-    if (!match(TokenType::LEFT_PAREN)) {
-        std::cerr << "Expected '(' after 'for'\n";
-        return nullptr;
-    }
+    if(!match(TokenType::LEFT_PAREN)) {std::cerr << "Expected '(' after 'for'\n"; return nullptr;}
 
     std::unique_ptr<Statement> initializer = nullptr;
-    if (peek().type != TokenType::SEMICOLON) {
-        initializer = parse_optional_assignment_or_expression();
-    }
-    if (!match(TokenType::SEMICOLON)) {
-        std::cerr << "Expected ';' after initializer\n";
-        return nullptr;
-    }
+    if(peek().type != TokenType::SEMICOLON) {initializer = parse_optional_assignment_or_expression();}
+
+    if(!match(TokenType::SEMICOLON)) {std::cerr << "Expected ';' after initializer\n"; return nullptr;}
 
     ExpressionParser cond_parser(tokens, position);
     auto condition = cond_parser.parse_expression();
     position = cond_parser.get_position();
 
-    if (!match(TokenType::SEMICOLON)) {
-        std::cerr << "Expected ';' after condition\n";
-        return nullptr;
-    }
+    if(!match(TokenType::SEMICOLON)) {std::cerr << "Expected ';' after condition\n"; return nullptr;}
 
     std::unique_ptr<Statement> increment = nullptr;
-    if (peek().type != TokenType::RIGHT_PAREN) {
-        increment = parse_optional_assignment_or_expression();
-    }
+    if(peek().type != TokenType::RIGHT_PAREN) {increment = parse_optional_assignment_or_expression();}
 
-    if (!match(TokenType::RIGHT_PAREN)) {
-        std::cerr << "Expected ')' after increment\n";
-        return nullptr;
-    }
+    if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Expected ')' after increment\n"; return nullptr;}
 
     auto body = parse_statement();
-    return std::make_unique<ForStatement>(
-            std::move(initializer),
-            std::move(condition),
-            std::move(increment),
-            std::move(body)
-    );
+    return std::make_unique<ForStatement>(std::move(initializer), std::move(condition), std::move(increment), std::move(body));
 }
 
 std::unique_ptr<Statement> Parser::parse_block()
@@ -209,6 +194,8 @@ std::unique_ptr<Statement> Parser::parse_optional_assignment_or_expression()
         auto assignment = parse_assignment_expression();
         return std::make_unique<AssignmentStatement>(std::move(assignment));
     }
+
+    if(peek().type == TokenType::IDENTIFIER && tokens[position + 1].type == TokenType::LEFT_BRACKET) {return parse_index_assignment_expression();}
 
     ExpressionParser expr_parser(tokens, position);
     auto expr = expr_parser.parse_expression();
@@ -272,4 +259,65 @@ std::unique_ptr<Statement> Parser::parse_return_statement()
         return std::make_unique<ReturnStatement>(std::move(val));
     }
 
+    return nullptr;
+}
+
+std::unique_ptr<Statement> Parser::parse_index_assignment()
+{
+    std::string name = advance().value;
+    std::unique_ptr<Expression> target = std::make_unique<VariableExpr>(name);
+
+    do
+    {
+        if(!match(TokenType::LEFT_BRACKET)) {break;}
+
+        ExpressionParser ep(tokens, position);
+        auto idx = ep.parse_expression();
+        position = ep.get_position();
+
+        if(!match(TokenType::RIGHT_BRACKET)) {std::cerr << "Expected ']' after index expression\n"; return nullptr;}
+
+        target = std::make_unique<IndexExpr>(std::move(target), std::move(idx));
+    } while(peek().type == TokenType::LEFT_BRACKET);
+
+    if(!match(TokenType::EQUALS)) {std::cerr << "Expected '=' after indexed 1 value\n"; return nullptr;}
+
+    ExpressionParser epv(tokens, position);
+    auto val = epv.parse_expression();
+    position = epv.get_position();
+
+    if(!match(TokenType::SEMICOLON)) {std::cerr << "Expected ';' after assignment\n"; return nullptr;}
+
+    if(dynamic_cast<IndexExpr*>(target.get()) == nullptr) {std::cerr << "[ERROR] Indexed assignment requires at least one []\n"; return nullptr;}
+
+    return std::make_unique<IndexAssignment>(std::move(target), std::move(val));
+}
+
+std::unique_ptr<Statement> Parser::parse_index_assignment_expression()
+{
+    std::string name = advance().value;
+    std::unique_ptr<Expression> target = std::make_unique<VariableExpr>(name);
+
+    do
+    {
+        if(!match(TokenType::LEFT_BRACKET)) {break;}
+
+        ExpressionParser ep(tokens, position);
+        auto idx = ep.parse_expression();
+        position = ep.get_position();
+
+        if(!match(TokenType::RIGHT_BRACKET)) {std::cerr << "Expected ']' after index expression\n"; return nullptr;}
+
+        target = std::make_unique<IndexExpr>(std::move(target), std::move(idx));
+    } while(peek().type == TokenType::LEFT_BRACKET);
+
+    if(!match(TokenType::EQUALS)) {std::cerr << "Expected '=' after indexed 1 value\n"; return nullptr;}
+
+    ExpressionParser epv(tokens, position);
+    auto val = epv.parse_expression();
+    position = epv.get_position();
+
+    if(dynamic_cast<IndexExpr*>(target.get()) == nullptr) {std::cerr << "[ERROR] Indexed assignment requires at least one []\n"; return nullptr;}
+
+    return std::make_unique<IndexAssignment>(std::move(target), std::move(val));
 }

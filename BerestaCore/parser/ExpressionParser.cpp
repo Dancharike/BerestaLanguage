@@ -73,10 +73,25 @@ std::unique_ptr<Expression> ExpressionParser::parse_factor()
 {
     auto expr = parse_primary();
 
+    while(match(TokenType::LEFT_BRACKET))
+    {
+        auto index = parse_expression();
+        if(!match(TokenType::RIGHT_BRACKET)) {std::cerr << "Expected ']' after index expression\n"; return nullptr;}
+        expr = std::make_unique<IndexExpr>(std::move(expr), std::move(index));
+    }
+
     while(peek().type == TokenType::STAR || peek().type == TokenType::SLASH)
     {
         Token op = advance();
         auto right = parse_primary();
+
+        while(match(TokenType::LEFT_BRACKET))
+        {
+            auto index = parse_expression();
+            if(!match(TokenType::RIGHT_BRACKET)) {std::cerr << "Expected ']' after index expression\n"; return nullptr;}
+            right = std::make_unique<IndexExpr>(std::move(right), std::move(index));
+        }
+
         expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right));
     }
 
@@ -143,6 +158,22 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
         auto expr = parse_expression();
         if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Expected ')' after expression.\n"; return nullptr;}
         return expr;
+    }
+
+    if(match(TokenType::LEFT_BRACKET))
+    {
+        std::vector<std::unique_ptr<Expression>> elems;
+        if(peek().type != TokenType::RIGHT_BRACKET)
+        {
+            do
+            {
+                elems.push_back(parse_expression());
+            } while(match(TokenType::COMMA));
+        }
+
+        if(!match(TokenType::RIGHT_BRACKET)) {std::cerr << "Expected ']' after array literal\n"; return nullptr;}
+
+        return std::make_unique<ArrayLiteralExpr>(std::move(elems));
     }
 
     std::cerr << "Unexpected token: " << peek().value << "\n";
