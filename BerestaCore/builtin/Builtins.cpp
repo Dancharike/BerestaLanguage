@@ -7,6 +7,123 @@
 #include <iostream>
 #include <cmath>
 #include <random>
+#include <algorithm>
+
+static bool ensure_array_arg(const std::vector<Value>& args, size_t idx, const char* function_name)
+{
+    if(idx >= args.size()) {std::cerr << "[ERROR] " << function_name <<": missing argument #" << idx << "\n"; return false;}
+    if(args[idx].type != ValueType::ARRAY) {std::cerr << "[ERROR] " << function_name << ": argument #" << idx << " must be array\n"; return false;}
+    return true;
+}
+
+static bool to_index_nonneg(const Value& v, size_t& out)
+{
+    long long i = 0;
+    if(v.type == ValueType::INTEGER) {i = static_cast<long long>(std::get<int>(v.data));}
+    else if(v.type == ValueType::DOUBLE) {i = static_cast<long long>(std::floor(std::get<double>(v.data)));}
+    else {return false;}
+    if(i < 0) {return false;}
+    out = static_cast<size_t>(i);
+    return true;
+}
+
+static bool value_equals(const Value& a, const Value& b)
+{
+    if(a.type != b.type) {return false;}
+    switch(a.type)
+    {
+        case ValueType::INTEGER: {return std::get<int>(a.data) == std::get<int>(b.data);}
+        case ValueType::DOUBLE: {return std::get<double>(a.data) == std::get<double>(b.data);}
+        case ValueType::BOOLEAN: {return std::get<bool>(a.data) == std::get<bool>(b.data);}
+        case ValueType::STRING: {return std::get<std::string>(a.data) == std::get<std::string>(b.data);}
+        case ValueType::ARRAY:
+        {
+            const auto& va = std::get<std::vector<Value>>(a.data);
+            const auto& vb = std::get<std::vector<Value>>(b.data);
+            if(va.size() != vb.size()) return false;
+            for(size_t i = 0; i < va.size(); ++i)
+            {
+                if(!value_equals(va[i], vb[i])) {return false;}
+            }
+            return true;
+        }
+        case ValueType::NONE: {return true;}
+    }
+    return false;
+}
+
+static bool is_number(ValueType t) {return t == ValueType::INTEGER || t == ValueType::DOUBLE;}
+
+static double as_double(const Value& v) {return (v.type == ValueType::DOUBLE) ? std::get<double>(v.data) : static_cast<double>(std::get<int>(v.data));}
+
+static int type_rank(ValueType t)
+{
+    switch(t)
+    {
+        case ValueType::NONE: {return 0;}
+        case ValueType::BOOLEAN: {return 1;}
+        case ValueType::INTEGER:
+        case ValueType::DOUBLE: {return 2;}
+        case ValueType::STRING: {return 3;}
+        case ValueType::ARRAY: {return 4;}
+        default: {return 5;}
+    }
+}
+
+static int value_cmp(const Value& a, const Value& b)
+{
+    if(is_number(a.type) && is_number(b.type))
+    {
+        double ad = as_double(a), bd = as_double(b);
+        if(ad < bd) {return -1;}
+        if(ad > bd) {return  1;}
+        return 0;
+    }
+
+    if(a.type == b.type)
+    {
+        switch(a.type)
+        {
+            case ValueType::BOOLEAN:
+            {
+                bool av = std::get<bool>(a.data), bv = std::get<bool>(b.data);
+                if(av == bv) return 0; return av ? 1 : -1;
+            }
+            case ValueType::STRING:
+            {
+                const auto& as = std::get<std::string>(a.data);
+                const auto& bs = std::get<std::string>(b.data);
+                if(as < bs) {return -1;}
+                if(as > bs) {return  1;}
+                return 0;
+            }
+            case ValueType::ARRAY:
+            {
+                const auto& av = std::get<std::vector<Value>>(a.data);
+                const auto& bv = std::get<std::vector<Value>>(b.data);
+                size_t n = std::min(av.size(), bv.size());
+                for(size_t i = 0; i < n; ++i)
+                {
+                    int c = value_cmp(av[i], bv[i]);
+                    if(c != 0) return c;
+                }
+
+                if(av.size() < bv.size()) {return -1;}
+                if(av.size() > bv.size()) {return  1;}
+                return 0;
+            }
+            case ValueType::NONE: {return 0;}
+            default: break;
+        }
+    }
+
+    int ra = type_rank(a.type), rb = type_rank(b.type);
+    if(ra < rb) {return -1;}
+    if(ra > rb) {return  1;}
+    return 0;
+}
+
+static bool value_less(const Value& a, const Value& b) {return value_cmp(a, b) < 0;}
 
 static Matrix2D current_matrix = Matrix2D::identity();
 
@@ -149,7 +266,7 @@ const std::unordered_map<std::string, BuiltinFunction> builtin_functions =
         {
             "power", [](const std::vector<Value>& args) -> Value
             {
-                if(args.size() != 2) {std::cerr << "[ERROR] pow expects 2 arguments\n"; return {};}
+                if(args.size() != 2) {std::cerr << "[ERROR] power expects 2 arguments\n"; return {};}
                 double base = (args[0].type == ValueType::DOUBLE) ? std::get<double>(args[0].data) : std::get<int>(args[0].data);
                 double exp = (args[1].type == ValueType::DOUBLE) ? std::get<double>(args[1].data) : std::get<int>(args[1].data);
                 return Value(std::pow(base, exp));
@@ -237,7 +354,7 @@ const std::unordered_map<std::string, BuiltinFunction> builtin_functions =
         {
             "choose_from", [](const std::vector<Value>& args) -> Value
             {
-                if(args.empty()) {std::cerr << "[ERROR] choose expects at least 1 argument\n"; return {};}
+                if(args.empty()) {std::cerr << "[ERROR] choose_from expects at least 1 argument\n"; return {};}
                 static std::random_device rd;
                 static std::mt19937 gen(rd());
                 std::uniform_int_distribution<size_t> dist(0, args.size() - 1);
@@ -300,6 +417,237 @@ const std::unordered_map<std::string, BuiltinFunction> builtin_functions =
                 static std::mt19937 gen(rd());
                 std::uniform_int_distribution<int> dist(min_val, max_val);
                 return Value(dist(gen));
+            }
+        },
+
+        // массивы
+        {
+            "array_is_array", [](const std::vector<Value>& args)->Value
+            {
+                if(args.empty()) {std::cerr << "[ERROR] array_is_array: need 1 arg\n"; return {};}
+                return Value(args[0].type == ValueType::ARRAY);
+            }
+        },
+        {
+            "array_length", [](const std::vector<Value>& args)->Value
+            {
+                if(!ensure_array_arg(args, 0, "array_length")) {return {};}
+                const auto& v = std::get<std::vector<Value>>(args[0].data);
+                return Value(static_cast<int>(v.size()));
+            }
+        },
+        {
+            "array_get", [](const std::vector<Value>& args)->Value
+            {
+                if(!ensure_array_arg(args, 0, "array_get")) {return {};}
+                if(args.size() < 2) {std::cerr << "[ERROR] array_get: need array, index\n"; return {};}
+                size_t i = 0; if (!to_index_nonneg(args[1], i)) {std::cerr << "[ERROR] array_get: index must be non-negative number\n"; return {};}
+                const auto& v = std::get<std::vector<Value>>(args[0].data);
+                if(i >= v.size()) {std::cerr << "[ERROR] array_get: index out of bounds\n"; return {};}
+                return v[i];
+            }
+        },
+        {
+            "array_set", [](const std::vector<Value>& args)->Value
+            {
+                if(!ensure_array_arg(args, 0, "array_set")) {return {};}
+                if(args.size() < 3) {std::cerr << "[ERROR] array_set: need array, index, value\n"; return {};}
+                size_t i = 0;
+                if(!to_index_nonneg(args[1], i)) {std::cerr << "[ERROR] array_set: index must be non-negative number\n"; return {};}
+                auto v = std::get<std::vector<Value>>(args[0].data);
+                if(i >= v.size()) {v.resize(i + 1, Value());}
+                v[i] = args[2];
+                return Value(v);
+            }
+        },
+        {
+            "array_push", [](const std::vector<Value>& args)->Value
+            {
+                if(!ensure_array_arg(args, 0, "array_push")) {return {};}
+                if(args.size() < 2) {std::cerr << "[ERROR] array_push: need array, value\n"; return {};}
+                auto v = std::get<std::vector<Value>>(args[0].data);
+                v.push_back(args[1]);
+                return Value(v);
+            }
+        },
+        {
+            "array_last", [](const std::vector<Value>& args)->Value
+            {
+                if(!ensure_array_arg(args, 0, "array_last")) {return {};}
+                const auto& v = std::get<std::vector<Value>>(args[0].data);
+                if(v.empty()) {std::cerr << "[ERROR] array_last: empty array\n"; return {};}
+                return v.back();
+            }
+        },
+        { "array_pop", [](const std::vector<Value>& args)->Value
+            {
+                if(!ensure_array_arg(args, 0, "array_pop")) {return {};}
+                auto v = std::get<std::vector<Value>>(args[0].data);
+                if(v.empty()) {std::cerr << "[ERROR] array_pop: empty array\n"; return Value(v);}
+                v.pop_back();
+                return Value(v);
+            }
+        },
+        {
+            "array_insert", [](const std::vector<Value>& args)->Value
+            {
+                if(!ensure_array_arg(args, 0, "array_insert")) {return {};}
+                if(args.size() < 3) {std::cerr << "[ERROR] array_insert: need array, index, value\n"; return {};}
+                size_t i = 0;
+                if(!to_index_nonneg(args[1], i)) {std::cerr << "[ERROR] array_insert: index must be non-negative number\n"; return {};}
+                auto v = std::get<std::vector<Value>>(args[0].data);
+                if(i > v.size()) {i = v.size();}
+                v.insert(v.begin() + static_cast<std::ptrdiff_t>(i), args[2]);
+                return Value(v);
+            }
+        },
+        {
+            "array_delete", [](const std::vector<Value>& args)->Value
+            {
+                if(!ensure_array_arg(args, 0, "array_delete")) {return {};}
+                if(args.size() < 2) {std::cerr << "[ERROR] array_delete: need array, index\n"; return {};}
+                size_t i = 0; if (!to_index_nonneg(args[1], i)) {std::cerr << "[ERROR] array_delete: index must be non-negative number\n"; return {};}
+                auto v = std::get<std::vector<Value>>(args[0].data);
+                if(i >= v.size()) {std::cerr << "[ERROR] array_delete: index out of bounds\n"; return Value(v);}
+                v.erase(v.begin() + static_cast<std::ptrdiff_t>(i));
+                return Value(v);
+            }
+        },
+        {
+            "array_slice", [](const std::vector<Value>& args)->Value
+            {
+                if(!ensure_array_arg(args, 0, "array_slice")) {return {};}
+                if(args.size() < 2) {std::cerr << "[ERROR] array_slice: need array, start [, count]\n"; return {};}
+                const auto& src = std::get<std::vector<Value>>(args[0].data);
+                size_t start = 0;
+                if(!to_index_nonneg(args[1], start)) {std::cerr << "[ERROR] array_slice: start must be non-negative number\n"; return {};}
+                if(start >= src.size()) {return Value(std::vector<Value>{});}
+                size_t count = src.size() - start;
+                if(args.size() >= 3)
+                {
+                    size_t tmp = 0;
+                    if(!to_index_nonneg(args[2], tmp)) {std::cerr << "[ERROR] array_slice: count must be non-negative number\n"; return {};}
+                    count = tmp;
+                }
+                size_t avail = src.size() - start;
+                size_t take = std::min(count, avail);
+                std::vector<Value> out;
+                out.reserve(take);
+                for(size_t k = 0; k < take; ++k)
+                {
+                    out.push_back(src[start + k]);
+                }
+                return Value(out);
+            }
+        },
+        {
+            "array_concat", [](const std::vector<Value>& args)->Value
+            {
+                if(!ensure_array_arg(args, 0, "array_concat")) {return {};}
+                if(!ensure_array_arg(args, 1, "array_concat")) {return {};}
+                auto a = std::get<std::vector<Value>>(args[0].data);
+                const auto& b = std::get<std::vector<Value>>(args[1].data);
+                a.insert(a.end(), b.begin(), b.end());
+                return Value(a);
+            }
+        },
+        {
+            "array_reverse", [](const std::vector<Value>& args)->Value
+            {
+                if(!ensure_array_arg(args, 0, "array_reverse")) {return {};}
+                auto v = std::get<std::vector<Value>>(args[0].data);
+                std::reverse(v.begin(), v.end());
+                return Value(v);
+            }
+        },
+        {
+            "array_index_of", [](const std::vector<Value>& args)->Value
+            {
+                if(!ensure_array_arg(args, 0, "array_index_of")) {return {};}
+                if(args.size() < 2) {std::cerr << "[ERROR] array_index_of: need array, value\n"; return {};}
+                const auto& v = std::get<std::vector<Value>>(args[0].data);
+                for(size_t i = 0; i < v.size(); ++i)
+                {
+                    if (value_equals(v[i], args[1])) return Value((int) i);
+                }
+                return Value(-1);
+            }
+        },
+        {
+            "array_contains", [](const std::vector<Value>& args)->Value
+            {
+                if(!ensure_array_arg(args, 0, "array_contains")) {return {};}
+                if(args.size() < 2) {std::cerr << "[ERROR] array_contains: need array, value\n"; return {};}
+                const auto& v = std::get<std::vector<Value>>(args[0].data);
+                for(const auto& e : v)
+                {
+                    if(value_equals(e, args[1])) {return Value(true);}
+                }
+                return Value(false);
+            }
+        },
+        {
+            "array_join", [](const std::vector<Value>& args)->Value
+            {
+                if(!ensure_array_arg(args, 0, "array_join")) {return {};}
+                std::string sep = (args.size() >= 2 && args[1].type == ValueType::STRING) ? std::get<std::string>(args[1].data) : ",";
+                const auto& v = std::get<std::vector<Value>>(args[0].data);
+                std::string out;
+                for(size_t i = 0; i < v.size(); ++i)
+                {
+                    if(i) {out += sep;}
+                    out += v[i].to_string();
+                }
+                return Value(out);
+            }
+        },
+        {
+            "array_resize", [](const std::vector<Value>& args)->Value
+            {
+                if(!ensure_array_arg(args, 0, "array_resize")) {return {};}
+                if(args.size() < 2) {std::cerr << "[ERROR] array_resize: need array, new_size [, fill]\n"; return {};}
+                size_t n = 0;
+                if(!to_index_nonneg(args[1], n)) {std::cerr << "[ERROR] array_resize: new_size must be non-negative number\n"; return {};}
+                auto v = std::get<std::vector<Value>>(args[0].data);
+                Value fill = (args.size() >= 3) ? args[2] : Value();
+                v.resize(n, fill);
+                return Value(v);
+            }
+        },
+        {
+            "array_fill", [](const std::vector<Value>& args)->Value
+            {
+                if(args.size() < 2) {std::cerr << "[ERROR] array_fill: need length, value\n"; return {};}
+                size_t n = 0;
+                if(!to_index_nonneg(args[0], n)) {std::cerr << "[ERROR] array_fill: length must be non-negative number\n"; return {};}
+                std::vector<Value> v(n, args[1]);
+                return Value(v);
+            }
+        },
+        {
+            "array_sort", [](const std::vector<Value>& args)->Value
+            {
+                if(!ensure_array_arg(args, 0, "array_sort")) {return {};}
+                bool asc = true;
+                if(args.size() >= 2)
+                {
+                    if(args[1].type == ValueType::BOOLEAN) {asc = std::get<bool>(args[1].data);}
+                    else {std::cerr << "[ERROR] array_sort: 2nd arg must be boolean (ascending)\n"; return {};}
+                }
+                auto v = std::get<std::vector<Value>>(args[0].data);
+                std::stable_sort(v.begin(), v.end(), [&](const Value& x, const Value& y){return asc ? value_less(x, y) : value_less(y, x);});
+                return Value(v);
+            }
+        },
+        {
+            "array_shuffle", [](const std::vector<Value>& args)->Value
+            {
+                if(!ensure_array_arg(args, 0, "array_shuffle")) {return {};}
+                auto v = std::get<std::vector<Value>>(args[0].data);
+                static std::random_device rd;
+                static std::mt19937 gen(rd());
+                std::shuffle(v.begin(), v.end(), gen);
+                return Value(v);
             }
         },
 
