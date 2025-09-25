@@ -34,3 +34,6 @@ ReturnStatement::ReturnStatement(std::unique_ptr<Expression> val)
 
 IndexAssignment::IndexAssignment(std::unique_ptr<Expression> t, std::unique_ptr<Expression> v)
     : Statement(StatementType::INDEX_ASSIGNMENT), target(std::move(t)), value(std::move(v)) {}
+
+EnumStatement::EnumStatement(std::string n, std::unordered_map<std::string, int> m)
+    : Statement(StatementType::ENUM), name(std::move(n)), members(std::move(m)) {}

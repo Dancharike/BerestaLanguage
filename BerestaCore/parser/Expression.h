@@ -24,7 +24,8 @@ enum class ExpressionType
     BOOLEAN,
     FUNCTION_CALL,
     ARRAY_LITERAL,
-    INDEX
+    INDEX,
+    MEMBER_ACCESS
 };
 
 struct Expression
@@ -103,6 +104,14 @@ struct IndexExpr : public Expression
     std::unique_ptr<Expression> index;
 
     IndexExpr(std::unique_ptr<Expression> arr, std::unique_ptr<Expression> idx) : Expression(ExpressionType::INDEX), array(std::move(arr)), index(std::move(idx)) {}
+};
+
+struct MemberAccessExpr : public Expression
+{
+    std::unique_ptr<Expression> object;
+    std::string member;
+
+    MemberAccessExpr(std::unique_ptr<Expression> obj, std::string mem) : Expression(ExpressionType::MEMBER_ACCESS), object(std::move(obj)), member(std::move(mem)) {}
 };
 
 #endif //BERESTALANGUAGE_EXPRESSION_H

@@ -72,6 +72,7 @@ Token Lexer::next_token()
         if(ident == "public") return {TokenType::PUBLIC, ident, start_pos};
         if(ident == "private") return {TokenType::PRIVATE, ident, start_pos};
         if(ident == "function") return {TokenType::FUNCTION, ident, start_pos};
+        if(ident == "enum") return {TokenType::ENUM, ident, start_pos};
         if(ident == "return") return {TokenType::RETURN, ident, start_pos};
 
         return  {TokenType::IDENTIFIER, ident, start_pos};
@@ -113,6 +114,7 @@ Token Lexer::next_token()
         case '!': return {TokenType::BANG, "!", start_pos};
         case '<': return {TokenType::LESS, "<", start_pos};
         case '>': return {TokenType::GREATER, ">", start_pos};
+        case '.': return {TokenType::DOT, ".", start_pos};
         case ',': return {TokenType::COMMA, ",", start_pos};
         case ';': return {TokenType::SEMICOLON, ";", start_pos};
         case '(': return {TokenType::LEFT_PAREN, "(", start_pos};

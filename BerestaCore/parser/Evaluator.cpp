@@ -8,6 +8,7 @@
 #include <iostream>
 #include <unordered_map>
 
+static std::unordered_map<std::string, std::unordered_map<std::string, int>> g_enums;
 static const PublicFunctionMap* g_public = nullptr;
 static const PrivateFunctionMap* g_private = nullptr;
 static std::string g_current_file;
@@ -124,6 +125,27 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
     {
         auto* b = dynamic_cast<BoolExpr*>(expr);
         return Value(b->value);
+    }
+
+    if(expr->type == ExpressionType::MEMBER_ACCESS)
+    {
+        auto* ma = dynamic_cast<MemberAccessExpr*>(expr);
+
+        if(auto* ve = dynamic_cast<VariableExpr*>(ma->object.get()))
+        {
+            auto itE = g_enums.find(ve->name);
+            if(itE != g_enums.end())
+            {
+                auto itM = itE->second.find(ma->member);
+                if(itM != itE->second.end()) {return Value(itM->second);}
+
+                std::cerr << "[ERROR] Unknown enum member: " << ve->name << "." << ma->member << "\n";
+                return {};
+            }
+        }
+
+        std::cerr << "[ERROR] Member access not supported for this expression type\n";
+        return {};
     }
 
     if(expr->type == ExpressionType::FUNCTION_CALL)
@@ -274,6 +296,12 @@ Value evaluate(Statement* stmt, std::unordered_map<std::string, Value>& variable
             result = evaluate(s.get(), variables);
         }
         return result;
+    }
+
+    if(auto* en = dynamic_cast<EnumStatement*>(stmt))
+    {
+        g_enums[en->name] = en->members;
+        return {};
     }
 
     if(auto* if_stmt = dynamic_cast<IfStatement*>(stmt))

@@ -15,6 +15,8 @@ enum class TokenType
     IDENTIFIER,
     NUMBER,
     STRING,
+    ENUM,
+    DOT,
     TRUE,
     FALSE,
     EQUALS,

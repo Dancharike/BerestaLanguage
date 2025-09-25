@@ -10,6 +10,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <unordered_map>
 
 struct Expression;
 
@@ -25,6 +26,7 @@ enum class StatementType
     FOR,
     BLOCK,
     FUNCTION,
+    ENUM,
     RETURN
 };
 
@@ -129,6 +131,14 @@ struct IndexAssignment : public Statement
     std::unique_ptr<Expression> value;
 
     IndexAssignment(std::unique_ptr<Expression> t, std::unique_ptr<Expression> v);
+};
+
+struct EnumStatement : Statement
+{
+    std::string name;
+    std::unordered_map<std::string, int> members;
+
+    EnumStatement(std::string  n, std::unordered_map<std::string, int> m);
 };
 
 #endif //BERESTALANGUAGE_STATEMENT_H

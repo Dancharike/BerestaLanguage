@@ -2,6 +2,7 @@
 // Created by Denis on 08.07.2025.
 //
 
+#include <unordered_map>
 #include "Parser.h"
 #include "ExpressionParser.h"
 
@@ -40,6 +41,7 @@ std::unique_ptr<Statement> Parser::parse_statement()
     if(peek().type == TokenType::WHILE) {return parse_while_statement();}
     if(peek().type == TokenType::REPEAT) {return parse_repeat_statement();}
     if(peek().type == TokenType::FOR) {return parse_for_statement();}
+    if(peek().type == TokenType::ENUM) {return parse_enum_statement();}
     if(peek().type == TokenType::LEFT_BRACE) {return parse_block();}
     if(peek().type == TokenType::IDENTIFIER && tokens[position + 1].type == TokenType::LEFT_BRACKET) {return parse_index_assignment();}
     if(peek().type == TokenType::IDENTIFIER && tokens[position + 1].type == TokenType::EQUALS)
@@ -48,8 +50,8 @@ std::unique_ptr<Statement> Parser::parse_statement()
         return std::make_unique<AssignmentStatement>(std::move(a));
     }
     if(peek().type == TokenType::PUBLIC || peek().type == TokenType::PRIVATE) {return parse_function_statement();}
-    if(peek().type == TokenType::FUNCTION) return {parse_function_statement()};
-    if(peek().type == TokenType::RETURN) return {parse_return_statement()};
+    if(peek().type == TokenType::FUNCTION) {return parse_function_statement();}
+    if(peek().type == TokenType::RETURN) {return parse_return_statement();}
 
     ExpressionParser expr_parser(tokens, position);
     auto expr = expr_parser.parse_expression();
@@ -320,4 +322,42 @@ std::unique_ptr<Statement> Parser::parse_index_assignment_expression()
     if(dynamic_cast<IndexExpr*>(target.get()) == nullptr) {std::cerr << "[ERROR] Indexed assignment requires at least one []\n"; return nullptr;}
 
     return std::make_unique<IndexAssignment>(std::move(target), std::move(val));
+}
+
+std::unique_ptr<Statement> Parser::parse_enum_statement()
+{
+    match(TokenType::ENUM);
+
+    if(peek().type != TokenType::IDENTIFIER) {std::cerr << "[ERROR] Expected enum name\n"; return nullptr;}
+
+    std::string enum_name = advance().value;
+
+    if(!match(TokenType::LEFT_BRACE)) {std::cerr << "[ERROR] Expected '{' after enum name\n"; return nullptr;}
+
+    std::unordered_map<std::string, int> members;
+    int auto_value = 0;
+
+    while(peek().type != TokenType::RIGHT_BRACE && peek().type != TokenType::END_OF_FILE)
+    {
+        if(peek().type != TokenType::IDENTIFIER) {std::cerr << "[ERROR] Expected enum member name\n"; return nullptr;}
+
+        std::string member_name = advance().value;
+        int member_value = auto_value;
+
+        if(match(TokenType::EQUALS))
+        {
+            if(peek().type != TokenType::NUMBER) {std::cerr << "[ERROR] Expected number after '=' in enum member\n"; return nullptr;}
+
+            const std::string& num = advance().value;
+            member_value = (num.find('.') != std::string::npos) ? static_cast<int>(std::stod(num)) : std::stoi(num);
+        }
+
+        members[member_name] = member_value;
+        auto_value = member_value + 1;
+
+        if(peek().type == TokenType::COMMA) {advance();}
+    }
+
+    if(!match(TokenType::RIGHT_BRACE)) {std::cerr << "[ERROR] Expected '}' after enum members\n"; return nullptr;}
+    return std::make_unique<EnumStatement>(enum_name, std::move(members));
 }

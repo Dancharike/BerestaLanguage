@@ -27,6 +27,7 @@ class ExpressionParser
         std::unique_ptr<Expression> parse_primary();
         std::unique_ptr<Expression> parse_comparison();
         std::unique_ptr<Expression> parse_logic();
+        std::unique_ptr<Expression> parse_postfix(std::unique_ptr<Expression> expr);
         Token advance();
         [[nodiscard]] Token peek() const;
         bool match(TokenType type);

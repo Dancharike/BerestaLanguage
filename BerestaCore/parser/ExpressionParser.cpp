@@ -71,27 +71,12 @@ std::unique_ptr<Expression> ExpressionParser::parse_term()
 
 std::unique_ptr<Expression> ExpressionParser::parse_factor()
 {
-    auto expr = parse_primary();
-
-    while(match(TokenType::LEFT_BRACKET))
-    {
-        auto index = parse_expression();
-        if(!match(TokenType::RIGHT_BRACKET)) {std::cerr << "Expected ']' after index expression\n"; return nullptr;}
-        expr = std::make_unique<IndexExpr>(std::move(expr), std::move(index));
-    }
+    auto expr = parse_postfix(parse_primary());
 
     while(peek().type == TokenType::STAR || peek().type == TokenType::SLASH)
     {
         Token op = advance();
-        auto right = parse_primary();
-
-        while(match(TokenType::LEFT_BRACKET))
-        {
-            auto index = parse_expression();
-            if(!match(TokenType::RIGHT_BRACKET)) {std::cerr << "Expected ']' after index expression\n"; return nullptr;}
-            right = std::make_unique<IndexExpr>(std::move(right), std::move(index));
-        }
-
+        auto right = parse_postfix(parse_primary());
         expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right));
     }
 
@@ -130,7 +115,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
     if(match(TokenType::IDENTIFIER))
     {
         std::string name = tokens[position - 1].value;
-
+        /*
         if(peek().type == TokenType::LEFT_PAREN)
         {
             advance();
@@ -149,7 +134,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
 
             return std::make_unique<FunctionCallExpr>(std::make_unique<VariableExpr>(name), std::move(args));
         }
-
+        */
         return std::make_unique<VariableExpr>(name);
     }
 
@@ -178,4 +163,50 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
 
     std::cerr << "Unexpected token: " << peek().value << "\n";
     return nullptr;
+}
+
+std::unique_ptr<Expression> ExpressionParser::parse_postfix(std::unique_ptr<Expression> expr)
+{
+    while(true)
+    {
+        if(match(TokenType::LEFT_BRACKET))
+        {
+            auto index = parse_expression();
+
+            if(!match(TokenType::RIGHT_BRACKET)) {std::cerr << "Expected ']' after index expression\n"; return nullptr;}
+
+            expr = std::make_unique<IndexExpr>(std::move(expr), std::move(index));
+            continue;
+        }
+
+        if(match(TokenType::LEFT_PAREN))
+        {
+            std::vector<std::unique_ptr<Expression>> args;
+            if(peek().type != TokenType::RIGHT_PAREN)
+            {
+                do
+                {
+                    args.push_back(parse_expression());
+                } while(match(TokenType::COMMA));
+            }
+
+            if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Unexpected token: " << peek().value << "\n"; return nullptr;}
+
+            expr = std::make_unique<FunctionCallExpr>(std::move(expr), std::move(args));
+            continue;
+        }
+
+        if(match(TokenType::DOT))
+        {
+            if(peek().type != TokenType::IDENTIFIER) {std::cerr << "[ERROR] Expected identifier after '.'\n"; return nullptr;}
+
+            std::string member = advance().value;
+            expr = std::make_unique<MemberAccessExpr>(std::move(expr), std::move(member));
+            continue;
+        }
+
+        break;
+    }
+
+    return expr;
 }
