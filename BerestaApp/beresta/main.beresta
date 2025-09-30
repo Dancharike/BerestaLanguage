@@ -1,0 +1,18 @@
+let stats = {"hp" : 100, "armour" : 75, "name" : "Penis"};
+console_print(dictionary_keys(stats));
+console_print(dictionary_values(stats));
+console_print(dictionary_has(stats, "hp"));
+console_print(dictionary_size(stats));
+
+let copy = dictionary_copy(stats);
+console_print(copy);
+
+stats = dictionary_remove(stats, "armour");
+console_print(stats);
+
+let extra = {"armour": 50};
+stats = dictionary_merge(stats, extra);
+console_print(stats);
+
+stats = dictionary_clear(stats);
+console_print(stats);

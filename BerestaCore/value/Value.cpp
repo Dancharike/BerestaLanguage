@@ -13,6 +13,7 @@ Value::Value(double val) : type(ValueType::DOUBLE), data(val) {}
 Value::Value(bool val) : type(ValueType::BOOLEAN), data(val) {}
 Value::Value(const std::string& val) : type(ValueType::STRING), data(val) {}
 Value::Value(const std::vector<Value>& val) : type(ValueType::ARRAY), data(val) {}
+Value::Value(const std::unordered_map<std::string, Value>& val) : type(ValueType::DICTIONARY), data(val) {}
 
 std::string Value::to_string() const
 {
@@ -47,6 +48,20 @@ std::string Value::to_string() const
                 if(i + 1 < arr.size()) {result += ", ";}
             }
             result += "]";
+            return result;
+        }
+
+        case ValueType::DICTIONARY:
+        {
+            const auto& dict = std::get<std::unordered_map<std::string, Value>>(data);
+            std::string result = "{";
+            size_t count = 0;
+            for (const auto& [key, val] : dict)
+            {
+                result += "\"" + key + "\": " + val.to_string();
+                if (++count < dict.size()) result += ", ";
+            }
+            result += "}";
             return result;
         }
 

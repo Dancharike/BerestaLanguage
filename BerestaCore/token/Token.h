@@ -25,6 +25,7 @@ enum class TokenType
     MINUS,
     STAR,
     SLASH,
+    COLON,
     LEFT_PAREN,
     RIGHT_PAREN,
     LEFT_BRACE,

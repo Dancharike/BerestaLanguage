@@ -10,6 +10,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <unordered_map>
 
 enum class ValueType
 {
@@ -18,6 +19,7 @@ enum class ValueType
     BOOLEAN,
     STRING,
     ARRAY,
+    DICTIONARY,
     NONE
 };
 
@@ -25,7 +27,7 @@ class Value
 {
     public:
         ValueType type;
-        std::variant<int, double, bool, std::string, std::vector<Value>> data;
+        std::variant<int, double, bool, std::string, std::vector<Value>, std::unordered_map<std::string, Value>> data;
 
         Value();
         explicit Value(int val);
@@ -33,6 +35,7 @@ class Value
         explicit Value(bool val);
         explicit Value(const std::string& val);
         explicit Value(const std::vector<Value>& val);
+        explicit Value(const std::unordered_map<std::string, Value>& val);
 
         [[nodiscard]] std::string to_string() const;
 };

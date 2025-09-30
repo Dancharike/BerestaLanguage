@@ -118,6 +118,7 @@ Token Lexer::next_token()
         case '>': return {TokenType::GREATER, ">", start_pos};
         case '.': return {TokenType::DOT, ".", start_pos};
         case ',': return {TokenType::COMMA, ",", start_pos};
+        case ':': return {TokenType::COLON, ":", start_pos};
         case ';': return {TokenType::SEMICOLON, ";", start_pos};
         case '(': return {TokenType::LEFT_PAREN, "(", start_pos};
         case ')': return {TokenType::RIGHT_PAREN, ")", start_pos};

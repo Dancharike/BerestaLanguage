@@ -24,6 +24,7 @@ enum class ExpressionType
     BOOLEAN,
     FUNCTION_CALL,
     ARRAY_LITERAL,
+    DICTIONARY_LITERAL,
     INDEX,
     MEMBER_ACCESS
 };
@@ -112,6 +113,14 @@ struct MemberAccessExpr : public Expression
     std::string member;
 
     MemberAccessExpr(std::unique_ptr<Expression> obj, std::string mem) : Expression(ExpressionType::MEMBER_ACCESS), object(std::move(obj)), member(std::move(mem)) {}
+};
+
+struct DictionaryLiteralExpr : public Expression
+{
+    std::vector<std::pair<std::unique_ptr<Expression>, std::unique_ptr<Expression>>> entries;
+
+    explicit DictionaryLiteralExpr(std::vector<std::pair<std::unique_ptr<Expression>, std::unique_ptr<Expression>>> entr)
+        : Expression(ExpressionType::DICTIONARY_LITERAL), entries(std::move(entr)) {}
 };
 
 #endif //BERESTALANGUAGE_EXPRESSION_H

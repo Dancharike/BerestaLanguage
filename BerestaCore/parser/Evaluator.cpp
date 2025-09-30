@@ -267,6 +267,24 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
         return arr[i];
     }
 
+    if(expr->type == ExpressionType::DICTIONARY_LITERAL)
+    {
+        auto* dict_expr = dynamic_cast<DictionaryLiteralExpr*>(expr);
+        std::unordered_map<std::string, Value> dict;
+
+        for(auto& [key_expr, val_expr] : dict_expr->entries)
+        {
+            Value k = evaluate(key_expr.get(), variables);
+            Value v = evaluate(val_expr.get(), variables);
+
+            if(k.type != ValueType::STRING) {std::cerr << "[ERROR] Dictionary keys must be strings\n"; return {};}
+
+            dict[std::get<std::string>(k.data)] = v;
+        }
+
+        return Value(dict);
+    }
+
     std::cerr << "[ERROR] Unknown expression type" << std::endl;
     return {};
 }

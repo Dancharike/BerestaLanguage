@@ -115,26 +115,6 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
     if(match(TokenType::IDENTIFIER))
     {
         std::string name = tokens[position - 1].value;
-        /*
-        if(peek().type == TokenType::LEFT_PAREN)
-        {
-            advance();
-            std::vector<std::unique_ptr<Expression>> args;
-
-            if(peek().type != TokenType::RIGHT_PAREN)
-            {
-                do
-                {
-                    args.push_back(parse_expression());
-                }
-                while(match(TokenType::COMMA));
-            }
-
-            if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Unexpected token: " << peek().value << "\n"; return nullptr;}
-
-            return std::make_unique<FunctionCallExpr>(std::make_unique<VariableExpr>(name), std::move(args));
-        }
-        */
         return std::make_unique<VariableExpr>(name);
     }
 
@@ -159,6 +139,28 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
         if(!match(TokenType::RIGHT_BRACKET)) {std::cerr << "Expected ']' after array literal\n"; return nullptr;}
 
         return std::make_unique<ArrayLiteralExpr>(std::move(elems));
+    }
+
+    if(match(TokenType::LEFT_BRACE))
+    {
+        std::vector<std::pair<std::unique_ptr<Expression>, std::unique_ptr<Expression>>> entries;
+
+        if(peek().type != TokenType::RIGHT_BRACE)
+        {
+            do
+            {
+                auto key = parse_expression();
+
+                if(!match(TokenType::COLON)) {std::cerr << "Expected ':' in dictionary literal\n"; return nullptr;}
+
+                auto value = parse_expression();
+                entries.emplace_back(std::move(key), std::move(value));
+            } while(match(TokenType::COMMA));
+        }
+
+        if(!match(TokenType::RIGHT_BRACE)) {std::cerr << "Expected '}' after dictionary literal\n"; return nullptr;}
+
+        return std::make_unique<DictionaryLiteralExpr>(std::move(entries));
     }
 
     std::cerr << "Unexpected token: " << peek().value << "\n";
