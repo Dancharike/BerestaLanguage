@@ -26,6 +26,9 @@ RepeatStatement::RepeatStatement(std::unique_ptr<Expression> count, std::unique_
 ForStatement::ForStatement(std::unique_ptr<Statement> init, std::unique_ptr<Expression> cond,std::unique_ptr<Statement> inc, std::unique_ptr<Statement> body)
     : Statement(StatementType::FOR), initializer(std::move(init)), condition(std::move(cond)), increment(std::move(inc)), body(std::move(body)) {}
 
+ForeachStatement::ForeachStatement(std::string var, std::unique_ptr<Expression> iter, std::unique_ptr<Statement> body)
+    : Statement(StatementType::FOREACH), var_name(std::move(var)), iterable(std::move(iter)), body(std::move(body)) {}
+
 FunctionStatement::FunctionStatement(FunctionVisibility vis,std::string name, std::vector<std::string> params,std::unique_ptr<Statement> body)
     : Statement(StatementType::FUNCTION), visibility(vis), name(std::move(name)), parameters(std::move(params)), body(std::move(body)) {}
 

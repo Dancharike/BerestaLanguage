@@ -46,6 +46,8 @@ enum class TokenType
     WHILE,
     REPEAT,
     FOR,
+    FOREACH,
+    IN,
     PUBLIC,
     PRIVATE,
     FUNCTION,

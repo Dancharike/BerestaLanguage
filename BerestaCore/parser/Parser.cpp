@@ -41,6 +41,7 @@ std::unique_ptr<Statement> Parser::parse_statement()
     if(peek().type == TokenType::WHILE) {return parse_while_statement();}
     if(peek().type == TokenType::REPEAT) {return parse_repeat_statement();}
     if(peek().type == TokenType::FOR) {return parse_for_statement();}
+    if(peek().type == TokenType::FOREACH) {return parse_foreach_statement();}
     if(peek().type == TokenType::ENUM) {return parse_enum_statement();}
     if(peek().type == TokenType::LEFT_BRACE) {return parse_block();}
     if(peek().type == TokenType::IDENTIFIER && tokens[position + 1].type == TokenType::LEFT_BRACKET) {return parse_index_assignment();}
@@ -170,6 +171,28 @@ std::unique_ptr<Statement> Parser::parse_for_statement()
 
     auto body = parse_statement();
     return std::make_unique<ForStatement>(std::move(initializer), std::move(condition), std::move(increment), std::move(body));
+}
+
+std::unique_ptr<Statement> Parser::parse_foreach_statement()
+{
+    match(TokenType::FOREACH);
+
+    if(!match(TokenType::LEFT_PAREN)) {std::cerr << "[ERROR] Expected '(' after 'foreach'\n"; return nullptr;}
+
+    if(peek().type != TokenType::IDENTIFIER) {std::cerr << "[ERROR] Expected variable name in foreach\n"; return nullptr;}
+
+    std::string var_name = advance().value;
+
+    if(!match(TokenType::IN)) {std::cerr << "[ERROR] Expected 'in' after foreach variable\n"; return nullptr;}
+
+    ExpressionParser expr_parser(tokens, position);
+    auto iterable = expr_parser.parse_expression();
+    position = expr_parser.get_position();
+
+    if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "[ERROR] Expected ')' after foreach iterable\n"; return nullptr;}
+
+    auto body = parse_statement();
+    return std::make_unique<ForeachStatement>(std::move(var_name), std::move(iterable), std::move(body));
 }
 
 std::unique_ptr<Statement> Parser::parse_block()

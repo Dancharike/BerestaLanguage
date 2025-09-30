@@ -25,6 +25,7 @@ class Parser
         std::unique_ptr<Statement> parse_while_statement();
         std::unique_ptr<Statement> parse_repeat_statement();
         std::unique_ptr<Statement> parse_for_statement();
+        std::unique_ptr<Statement> parse_foreach_statement();
         std::unique_ptr<Statement> parse_optional_assignment_or_expression();
         std::unique_ptr<Statement> parse_block();
         std::unique_ptr<Statement> parse_function_statement();

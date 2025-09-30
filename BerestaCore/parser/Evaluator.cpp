@@ -380,6 +380,24 @@ Value evaluate(Statement* stmt, std::unordered_map<std::string, Value>& variable
         return {};
     }
 
+    if(auto* foreach_stmt = dynamic_cast<ForeachStatement*>(stmt))
+    {
+        Value iterable_val = evaluate(foreach_stmt->iterable.get(), variables);
+
+        if(iterable_val.type != ValueType::ARRAY) {std::cerr << "[ERROR] Foreach expects an array\n"; return {};}
+
+        auto& arr = std::get<std::vector<Value>>(iterable_val.data);
+        for(auto& elem : arr)
+        {
+            push_scope();
+            set_var(foreach_stmt->var_name, elem, true);
+            evaluate(foreach_stmt->body.get(), env_stack.back());
+            pop_scope();
+        }
+
+        return {};
+    }
+
     if(auto* ret = dynamic_cast<ReturnStatement*>(stmt))
     {
         Value v = ret->value ? evaluate(ret->value.get(), variables) : Value();

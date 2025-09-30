@@ -69,6 +69,8 @@ Token Lexer::next_token()
         if(ident == "while") return {TokenType::WHILE, ident, start_pos};
         if(ident == "repeat") return {TokenType::REPEAT, ident, start_pos};
         if(ident == "for") return {TokenType::FOR, ident, start_pos};
+        if(ident == "foreach") return {TokenType::FOREACH, ident, start_pos};
+        if(ident == "in") return {TokenType::IN, ident, start_pos};
         if(ident == "public") return {TokenType::PUBLIC, ident, start_pos};
         if(ident == "private") return {TokenType::PRIVATE, ident, start_pos};
         if(ident == "function") return {TokenType::FUNCTION, ident, start_pos};

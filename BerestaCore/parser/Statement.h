@@ -24,6 +24,7 @@ enum class StatementType
     WHILE,
     REPEAT,
     FOR,
+    FOREACH,
     BLOCK,
     FUNCTION,
     ENUM,
@@ -99,6 +100,15 @@ struct ForStatement : public Statement
     std::unique_ptr<Statement> body;
 
     ForStatement(std::unique_ptr<Statement> init, std::unique_ptr<Expression> cond, std::unique_ptr<Statement> inc, std::unique_ptr<Statement> body);
+};
+
+struct ForeachStatement : public Statement
+{
+    std::string var_name;
+    std::unique_ptr<Expression> iterable;
+    std::unique_ptr<Statement> body;
+
+    ForeachStatement(std::string var, std::unique_ptr<Expression> iter, std::unique_ptr<Statement> body);
 };
 
 struct BlockStatement : public Statement
