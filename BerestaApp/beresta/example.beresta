@@ -326,8 +326,7 @@
     }
 
 // словарь
-    let stats = {"hp" : 100, "armour" : 75, "name" : "Penis"};
-    console_print(stats);
+
 */
 
 

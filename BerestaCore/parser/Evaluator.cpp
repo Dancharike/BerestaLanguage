@@ -251,26 +251,45 @@ Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& v
     if(expr->type == ExpressionType::INDEX)
     {
         auto* idx = dynamic_cast<IndexExpr*>(expr);
-        Value arr_val = evaluate(idx->array.get(), variables);
+        Value container_val = evaluate(idx->array.get(), variables);
         Value index_val = evaluate(idx->index.get(), variables);
 
-        if(arr_val.type != ValueType::ARRAY) {std::cerr << "[ERROR] Indexing non-array value\n"; return {};}
+        if(container_val.type == ValueType::ARRAY)
+        {
+            int i = 0;
+            if(index_val.type == ValueType::INTEGER) {i = std::get<int>(index_val.data);}
+            else if(index_val.type == ValueType::DOUBLE) {i = static_cast<int>(std::get<double>(index_val.data));}
+            else {std::cerr << "[ERROR] Array index must be a number (int or double)\n"; return {};}
 
-        int i = 0;
-        if(index_val.type == ValueType::INTEGER) {i = std::get<int>(index_val.data);}
-        else if(index_val.type == ValueType::DOUBLE) {i = static_cast<int>(std::get<double>(index_val.data));}
-        else {std::cerr << "[ERROR] Array index must be a number (int or double)\n"; return {};}
+            auto& arr = std::get<std::vector<Value>>(container_val.data);
+            if(i < 0 || i >= static_cast<int>(arr.size())) {std::cerr << "[ERROR] Array index out of bounds\n"; return {};}
 
-        auto& arr = std::get<std::vector<Value>>(arr_val.data);
-        if(i < 0 || i >= static_cast<int>(arr.size())) {std::cerr << "[ERROR] Array index out of bounds\n"; return {};}
+            return arr[i];
+        }
 
-        return arr[i];
+        if(container_val.type == ValueType::DICTIONARY)
+        {
+            std::string key;
+
+            if(index_val.type == ValueType::STRING) {key = std::get<std::string>(index_val.data);}
+            else {key = index_val.to_string();}
+
+            const auto& dict = *std::get<DictionaryPtr>(container_val.data);
+            auto it = dict.find(key);
+
+            if(it == dict.end()) {std::cerr << "[ERROR] Key not found in directory: " << key << "\n"; return {};}
+
+            return it->second;
+        }
+
+        std::cerr << "[ERROR] Indexing non-array/non-dictionary value\n";
+        return {};
     }
 
     if(expr->type == ExpressionType::DICTIONARY_LITERAL)
     {
         auto* dict_expr = dynamic_cast<DictionaryLiteralExpr*>(expr);
-        std::unordered_map<std::string, Value> dict;
+        Dictionary dict;
 
         for(auto& [key_expr, val_expr] : dict_expr->entries)
         {
@@ -306,19 +325,19 @@ Value evaluate(Statement* stmt, std::unordered_map<std::string, Value>& variable
 
     if(auto* expr_stmt = dynamic_cast<ExpressionStatement*>(stmt)) {return evaluate(expr_stmt->expression.get(), variables);}
 
-    if(auto* block = dynamic_cast<BlockStatement*>(stmt))
+    if(auto* block_stmt = dynamic_cast<BlockStatement*>(stmt))
     {
         Value result;
-        for(const auto& s : block->statements)
+        for(const auto& s : block_stmt->statements)
         {
             result = evaluate(s.get(), variables);
         }
         return result;
     }
 
-    if(auto* en = dynamic_cast<EnumStatement*>(stmt))
+    if(auto* enum_stmt = dynamic_cast<EnumStatement*>(stmt))
     {
-        g_enums[en->name] = en->members;
+        g_enums[enum_stmt->name] = enum_stmt->members;
         return {};
     }
 
@@ -416,60 +435,75 @@ Value evaluate(Statement* stmt, std::unordered_map<std::string, Value>& variable
         return {};
     }
 
-    if(auto* ret = dynamic_cast<ReturnStatement*>(stmt))
+    if(auto* return_stmt = dynamic_cast<ReturnStatement*>(stmt))
     {
-        Value v = ret->value ? evaluate(ret->value.get(), variables) : Value();
+        Value v = return_stmt->value ? evaluate(return_stmt->value.get(), variables) : Value();
         throw ReturnException(v);
     }
 
-    if (auto* ia = dynamic_cast<IndexAssignment*>(stmt))
+    if(auto* ia_stmt = dynamic_cast<IndexAssignment*>(stmt))
     {
-        std::vector<int> indices;
-        Expression* cur = ia->target.get();
+        std::vector<Value> raw_indices;
+        Expression* cur = ia_stmt->target.get();
 
         while(auto* idx = dynamic_cast<IndexExpr*>(cur))
         {
             Value iv = evaluate(idx->index.get(), variables);
-            int i = 0;
-            if(iv.type == ValueType::INTEGER) {i = std::get<int>(iv.data);}
-            else if(iv.type == ValueType::DOUBLE) {i = static_cast<int>(std::get<double>(iv.data));}
-            else {std::cerr << "[ERROR] Array index must be a number (int or double)\n"; return {};}
-
-            indices.push_back(i);
+            raw_indices.push_back(iv);
             cur = idx->array.get();
         }
 
         auto* var = dynamic_cast<VariableExpr*>(cur);
         if(!var) {std::cerr << "[ERROR] Left side of indexed assignment must be a variable\n"; return {};}
 
-        Value arr_val = get_var(var->name);
-        if(arr_val.type != ValueType::ARRAY) {std::cerr << "[ERROR] Variable '" << var->name << "' is not an array\n"; return {};}
+        Value container_val = get_var(var->name);
+        Value new_val = evaluate(ia_stmt->value.get(), variables);
 
-        std::reverse(indices.begin(), indices.end());
-        Value new_val = evaluate(ia->value.get(), variables);
+        std::reverse(raw_indices.begin(), raw_indices.end());
+        Value* current = &container_val;
 
-        Value* current = &arr_val;
-        for(size_t level = 0; level < indices.size(); ++level)
+        for(size_t level = 0; level < raw_indices.size(); ++level)
         {
-            int i = indices[level];
-            if(i < 0) {std::cerr << "[ERROR] Negative index in array assignment\n"; return {};}
+            Value idx = raw_indices[level];
+            bool last = (level + 1 == raw_indices.size());
 
-            if(current->type != ValueType::ARRAY) {*current = Value(std::vector<Value>{});}
-
-            auto& vec = std::get<std::vector<Value>>(current->data);
-
-            if(static_cast<size_t>(i) >= vec.size()) {vec.resize(static_cast<size_t>(i) + 1, Value());}
-
-            if(level + 1 == indices.size()) {vec[static_cast<size_t>(i)] = new_val;}
-            else
+            if(current->type == ValueType::ARRAY)
             {
-                Value& slot = vec[static_cast<size_t>(i)];
-                if(slot.type != ValueType::ARRAY) {slot = Value(std::vector<Value>{});}
-                current = &slot;
+                int i = 0;
+                if(idx.type == ValueType::INTEGER) {i = std::get<int>(idx.data);}
+                else if(idx.type == ValueType::DOUBLE) {i = static_cast<int>(std::get<double>(idx.data));}
+                else {std::cerr << "[ERROR] Array index must be a number (int or double)\n"; return {};}
+
+                auto& vec = std::get<std::vector<Value>>(current->data);
+
+                if(i < 0) {std::cerr << "[ERROR] Negative array index\n"; return {};}
+                if(static_cast<size_t>(i) >= vec.size()) vec.resize(i + 1, Value());
+
+                if(last) {vec[i] = new_val;}
+                else {current = &vec[i];}
             }
+            else if(current->type == ValueType::DICTIONARY)
+            {
+                std::string key = (idx.type == ValueType::STRING) ? std::get<std::string>(idx.data) : idx.to_string();
+
+                auto& dict = *std::get<DictionaryPtr>(current->data);
+
+                if(last) {dict[key] = new_val;}
+                else
+                {
+                    auto it = dict.find(key);
+                    if(it == dict.end())
+                    {
+                        dict[key] = Value(Dictionary{});
+                        current = &dict[key];
+                    }
+                    else {current = &it->second;}
+                }
+            }
+            else {std::cerr << "[ERROR] Indexed assignment not supported for this type\n"; return {};}
         }
 
-        set_var(var->name, arr_val, false);
+        set_var(var->name, container_val, false);
         return new_val;
     }
 

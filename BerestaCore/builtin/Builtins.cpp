@@ -656,7 +656,7 @@ const std::unordered_map<std::string, BuiltinFunction> builtin_functions =
             "dictionary_keys", [](const std::vector<Value>& args)->Value
             {
                 if(args.size() != 1 || args[0].type != ValueType::DICTIONARY) {std::cerr << "[ERROR] dictionary_keys expects 1 dictionary argument\n"; return {};}
-                const auto& dict = std::get<std::unordered_map<std::string, Value>>(args[0].data);
+                const auto& dict = *std::get<DictionaryPtr>(args[0].data);
                 std::vector<Value> keys;
                 for(const auto& [k, v] : dict)
                 {
@@ -669,7 +669,7 @@ const std::unordered_map<std::string, BuiltinFunction> builtin_functions =
             "dictionary_values", [](const std::vector<Value>& args)->Value
             {
                 if(args.size() != 1 || args[0].type != ValueType::DICTIONARY) {std::cerr << "[ERROR] dictionary_values expects 1 dictionary argument\n"; return {};}
-                const auto& dict = std::get<std::unordered_map<std::string, Value>>(args[0].data);
+                const auto& dict = *std::get<DictionaryPtr>(args[0].data);
                 std::vector<Value> values;
                 for(const auto& [k, v] : dict)
                 {
@@ -682,16 +682,38 @@ const std::unordered_map<std::string, BuiltinFunction> builtin_functions =
             "dictionary_has", [](const std::vector<Value>& args)->Value
             {
                 if(args.size() != 2 || args[0].type != ValueType::DICTIONARY || args[1].type != ValueType::STRING) {std::cerr << "[ERROR] dictionary_has expects (dict, string)\n"; return {};}
-                const auto& dict = std::get<std::unordered_map<std::string, Value>>(args[0].data);
+                const auto& dict = *std::get<DictionaryPtr>(args[0].data);
                 const auto& key = std::get<std::string>(args[1].data);
                 return Value(dict.find(key) != dict.end());
             }
         },
         {
-            "dictionary_remove", [](const std::vector<Value>& args)->Value
+            "dictionary_get", [](const std::vector<Value>& args)->Value
             {
-                if(args.size() != 2 || args[0].type != ValueType::DICTIONARY || args[1].type != ValueType::STRING) {std::cerr << "[ERROR] dictionary_remove expects (dict, string)\n"; return {};}
-                auto& dict = std::get<std::unordered_map<std::string, Value>>(const_cast<std::variant<int, double, bool, std::string, std::vector<Value>, std::unordered_map<std::string, Value>>&>(args[0].data));
+                if(args.size() < 2 || args.size() > 3 || args[0].type != ValueType::DICTIONARY || args[1].type != ValueType::STRING) {std::cerr << "[ERROR] dictionary_get expects (dict, string[, default])\n"; return {};}
+                const auto& dict = *std::get<DictionaryPtr>(args[0].data);
+                const auto& key = std::get<std::string>(args[1].data);
+                auto it = dict.find(key);
+                if(it != dict.end()) return it->second;
+                if(args.size() == 3) return args[2];
+                return {};
+            }
+        },
+        {
+            "dictionary_set", [](const std::vector<Value>& args)->Value
+            {
+                if(args.size() != 3 || args[0].type != ValueType::DICTIONARY || args[1].type != ValueType::STRING) {std::cerr << "[ERROR] dictionary_set expects (dict, string, value)\n"; return {};}
+                auto& dict = *std::get<DictionaryPtr>(args[0].data);
+                const auto& key = std::get<std::string>(args[1].data);
+                dict[key] = args[2];
+                return args[0];
+            }
+        },
+        {
+            "dictionary_delete", [](const std::vector<Value>& args)->Value
+            {
+                if(args.size() != 2 || args[0].type != ValueType::DICTIONARY || args[1].type != ValueType::STRING) {std::cerr << "[ERROR] dictionary_delete expects (dict, string)\n"; return {};}
+                auto& dict = *std::get<DictionaryPtr>(args[0].data);
                 const auto& key = std::get<std::string>(args[1].data);
                 dict.erase(key);
                 return args[0];
@@ -701,7 +723,7 @@ const std::unordered_map<std::string, BuiltinFunction> builtin_functions =
             "dictionary_size", [](const std::vector<Value>& args)->Value
             {
                 if(args.size() != 1 || args[0].type != ValueType::DICTIONARY) {std::cerr << "[ERROR] dictionary_size expects 1 dictionary argument\n"; return {};}
-                const auto& dict = std::get<std::unordered_map<std::string, Value>>(args[0].data);
+                const auto& dict = *std::get<DictionaryPtr>(args[0].data);
                 return Value((int)dict.size());
             }
         },
@@ -709,7 +731,7 @@ const std::unordered_map<std::string, BuiltinFunction> builtin_functions =
             "dictionary_clear", [](const std::vector<Value>& args)->Value
             {
                 if(args.size() != 1 || args[0].type != ValueType::DICTIONARY) {std::cerr << "[ERROR] dictionary_clear expects 1 dictionary argument\n"; return {};}
-                auto& dict = std::get<std::unordered_map<std::string, Value>>(const_cast<std::variant<int, double, bool, std::string, std::vector<Value>, std::unordered_map<std::string, Value>>&>(args[0].data));
+                auto& dict = *std::get<DictionaryPtr>(args[0].data);
                 dict.clear();
                 return args[0];
             }
@@ -718,21 +740,29 @@ const std::unordered_map<std::string, BuiltinFunction> builtin_functions =
             "dictionary_copy", [](const std::vector<Value>& args)->Value
             {
                 if(args.size() != 1 || args[0].type != ValueType::DICTIONARY) {std::cerr << "[ERROR] dictionary_copy expects 1 dictionary argument\n"; return {};}
-                const auto& dict = std::get<std::unordered_map<std::string, Value>>(args[0].data);
-                return Value(dict);
+                const auto& dict = *std::get<DictionaryPtr>(args[0].data);
+                return Value(Dictionary(dict));
             }
         },
         {
             "dictionary_merge", [](const std::vector<Value>& args)->Value
             {
                 if(args.size() != 2 || args[0].type != ValueType::DICTIONARY || args[1].type != ValueType::DICTIONARY) {std::cerr << "[ERROR] dictionary_merge expects (dict, dict)\n"; return {};}
-                auto& dict1 = std::get<std::unordered_map<std::string, Value>>(const_cast<std::variant<int, double, bool, std::string, std::vector<Value>, std::unordered_map<std::string, Value>>&>(args[0].data));
-                const auto& dict2 = std::get<std::unordered_map<std::string, Value>>(args[1].data);
+                auto& dict1 = *std::get<DictionaryPtr>(args[0].data);
+                const auto& dict2 = *std::get<DictionaryPtr>(args[1].data);
                 for(const auto& [k, v] : dict2)
                 {
                     dict1[k] = v;
                 }
                 return args[0];
+            }
+        },
+        {
+            "dictionary_destroy", [](const std::vector<Value>& args)->Value
+            {
+                if(args.size() != 1 || args[0].type != ValueType::DICTIONARY) {std::cerr << "[ERROR] dictionary_destroy expects (dict)\n"; return {};}
+                const_cast<Value&>(args[0]) = Value();
+                return Value();
             }
         },
 

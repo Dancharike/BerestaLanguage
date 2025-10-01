@@ -149,6 +149,8 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
         {
             do
             {
+                if(peek().type != TokenType::STRING) {std::cerr << "[ERROR] Dictionary keys must be string literals\n"; return nullptr;}
+
                 auto key = parse_expression();
 
                 if(!match(TokenType::COLON)) {std::cerr << "Expected ':' in dictionary literal\n"; return nullptr;}

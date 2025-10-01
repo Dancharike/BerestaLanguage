@@ -11,6 +11,7 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+#include <memory>
 
 enum class ValueType
 {
@@ -23,11 +24,15 @@ enum class ValueType
     NONE
 };
 
+struct Value;
+using Dictionary = std::unordered_map<std::string, Value>;
+using DictionaryPtr = std::shared_ptr<Dictionary>;
+
 class Value
 {
     public:
         ValueType type;
-        std::variant<int, double, bool, std::string, std::vector<Value>, std::unordered_map<std::string, Value>> data;
+        std::variant<std::monostate, int, double, bool, std::string, std::vector<Value>, DictionaryPtr> data;
 
         Value();
         explicit Value(int val);
@@ -35,7 +40,7 @@ class Value
         explicit Value(bool val);
         explicit Value(const std::string& val);
         explicit Value(const std::vector<Value>& val);
-        explicit Value(const std::unordered_map<std::string, Value>& val);
+        explicit Value(const Dictionary& val);
 
         [[nodiscard]] std::string to_string() const;
 };

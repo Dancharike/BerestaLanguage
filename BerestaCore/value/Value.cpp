@@ -6,14 +6,14 @@
 #include <sstream>
 #include <iomanip>
 
-Value::Value() : type(ValueType::NONE), data(0) {}
+Value::Value() : type(ValueType::NONE), data(std::monostate{}) {}
 
 Value::Value(int val) : type(ValueType::INTEGER), data(val) {}
 Value::Value(double val) : type(ValueType::DOUBLE), data(val) {}
 Value::Value(bool val) : type(ValueType::BOOLEAN), data(val) {}
 Value::Value(const std::string& val) : type(ValueType::STRING), data(val) {}
 Value::Value(const std::vector<Value>& val) : type(ValueType::ARRAY), data(val) {}
-Value::Value(const std::unordered_map<std::string, Value>& val) : type(ValueType::DICTIONARY), data(val) {}
+Value::Value(const Dictionary& val) : type(ValueType::DICTIONARY), data(std::make_shared<Dictionary>(val)) {}
 
 std::string Value::to_string() const
 {
@@ -53,17 +53,19 @@ std::string Value::to_string() const
 
         case ValueType::DICTIONARY:
         {
-            const auto& dict = std::get<std::unordered_map<std::string, Value>>(data);
+            const auto& dict = *std::get<DictionaryPtr>(data);
             std::string result = "{";
             size_t count = 0;
-            for (const auto& [key, val] : dict)
+            for(const auto& [key, val] : dict)
             {
                 result += "\"" + key + "\": " + val.to_string();
-                if (++count < dict.size()) result += ", ";
+                if(++count < dict.size()) {result += ", ";}
             }
             result += "}";
             return result;
         }
+
+        case ValueType::NONE: return "none";
 
         default: return "none (no return)";
     }
