@@ -7,7 +7,9 @@
 
 #pragma once
 #include "Expression.h"
+#include "Statement.h"
 #include "../value/Value.h"
+#include "../environment/Environment.h"
 #include <unordered_map>
 #include <string>
 #include <stack>
@@ -19,46 +21,23 @@ struct ReturnException
     explicit ReturnException(Value v) : value(std::move(v)) {}
 };
 
-using PublicFunctionMap = std::unordered_map<std::string, std::pair<FunctionStatement*, std::string>>;
-using PrivateFunctionMap = std::unordered_map<std::string, std::unordered_map<std::string, FunctionStatement*>>;
+class FunctionIndex;
 
-void set_public_functions(const PublicFunctionMap* ptr);
-void set_private_functions(const PrivateFunctionMap* ptr);
-void set_current_file(const std::string& filename);
-
-static std::vector<std::unordered_map<std::string, Value>> env_stack = {{}};
-
-static void push_scope() {env_stack.emplace_back();}
-static void pop_scope() {env_stack.pop_back();}
-
-static Value get_var(const std::string& name)
+class Evaluator
 {
-    for(int i = (int)env_stack.size() - 1; i >= 0; --i)
-    {
-        auto it = env_stack[i].find(name);
-        if(it != env_stack[i].end()) {return it->second;}
-    }
+    public:
+        Evaluator(Environment& env, FunctionIndex& index, std::string current_file);
 
-    std::cerr << "[ERROR] Variable not found: " << name << "\n";
-    return {};
-}
+        Value eval_expression(Expression* expr);
+        Value eval_statement(Statement* stmt);
 
-static void set_var(const std::string& name, const Value& v, bool is_let)
-{
-    if(is_let) {env_stack.back()[name] = v;}
-    else
-    {
-        for(int i = (int)env_stack.size() - 1; i >= 0; --i)
-        {
-            auto it = env_stack[i].find(name);
-            if(it != env_stack[i].end()) {env_stack[i][name] = v; return;}
-        }
+    private:
+        Environment& _env;
+        FunctionIndex& _index;
 
-        env_stack[0][name] = v;
-    }
-}
+        std::vector<std::string> _file_stack;
+        [[nodiscard]] const std::string& current_file() const {return _file_stack.back();}
+};
 
-Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& variables);
-Value evaluate(Statement* stmt, std::unordered_map<std::string, Value>& variables);
 
 #endif

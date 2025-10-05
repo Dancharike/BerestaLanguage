@@ -4,509 +4,465 @@
 
 #include "Evaluator.h"
 #include "Expression.h"
+#include "Statement.h"
+#include "../interpreter/FunctionIndex.h"
 #include "../builtin/Builtins.h"
 #include <iostream>
 #include <unordered_map>
 
-static std::unordered_map<std::string, std::unordered_map<std::string, int>> g_enums;
-static const PublicFunctionMap* g_public = nullptr;
-static const PrivateFunctionMap* g_private = nullptr;
-static std::string g_current_file;
-
-void set_public_functions(const PublicFunctionMap* ptr) {g_public = ptr;}
-void set_private_functions(const PrivateFunctionMap* ptr) {g_private = ptr;}
-void set_current_file(const std::string& filename) {g_current_file = filename;}
-
-Value evaluate(Expression* expr, const std::unordered_map<std::string, Value>& variables)
+Evaluator::Evaluator(Environment &env, FunctionIndex &index, std::string current_file) : _env(env), _index(index)
 {
-    if(expr->type == ExpressionType::UNARY)
-    {
-        auto* unary = dynamic_cast<UnaryExpr*>(expr);
-        Value right_val = evaluate(unary->right.get(), variables);
-
-        if(unary->op == '!')
-        {
-            bool val = false;
-
-            if(right_val.type == ValueType::BOOLEAN) {val = std::get<bool>(right_val.data);}
-            else if(right_val.type == ValueType::INTEGER) {val = std::get<int>(right_val.data) != 0;}
-            else if(right_val.type == ValueType::DOUBLE) {val = std::get<double>(right_val.data) != 0.0;}
-            else if(right_val.type == ValueType::STRING) {val = !right_val.to_string().empty();}
-
-            return Value(!val);
-        }
-
-        if(right_val.type == ValueType::DOUBLE)
-        {
-            double val = std::get<double>(right_val.data);
-            switch(unary->op)
-            {
-                case '-': return Value(-val);
-                case '+': return Value(+val);
-                default: std::cerr << "[ERROR] Unknown unary operator: " << unary->op << std::endl; return {};
-            }
-        }
-
-        if(right_val.type == ValueType::INTEGER)
-        {
-            int val = std::get<int>(right_val.data);
-            switch(unary->op)
-            {
-                case '-': return Value(-val);
-                case '+': return Value(+val);
-                default: std::cerr << "[ERROR] Unknown unary operator: " << unary->op << std::endl; return {};
-            }
-        }
-
-        std::cerr << "[ERROR] Unsupported unary operand type" << std::endl;
-        return {};
-    }
-
-    if(expr->type == ExpressionType::NUMBER) {return dynamic_cast<NumberExpr*>(expr)->value;}
-
-    if(expr->type == ExpressionType::BINARY)
-    {
-        auto* bin = dynamic_cast<BinaryExpr*>(expr);
-        Value left_val = evaluate(bin->left.get(), variables);
-        Value right_val = evaluate(bin->right.get(), variables);
-        const std::string& op = bin->op;
-
-        if((left_val.type == ValueType::INTEGER || left_val.type == ValueType::DOUBLE) && (right_val.type == ValueType::INTEGER || right_val.type == ValueType::DOUBLE))
-        {
-            double l = (left_val.type == ValueType::DOUBLE) ? std::get<double>(left_val.data) : std::get<int>(left_val.data);
-            double r = (right_val.type == ValueType::DOUBLE) ? std::get<double>(right_val.data) : std::get<int>(right_val.data);
-
-            if(op == "+") return Value(l + r);
-            if(op == "-") return Value(l - r);
-            if(op == "*") return Value(l * r);
-            if(op == "/") return (r != 0.0) ? Value(l / r) : Value(0.0);
-
-            if(op == "==") return Value(l == r);
-            if(op == "!=") return Value(l != r);
-            if(op == "<")  return Value(l <  r);
-            if(op == "<=") return Value(l <= r);
-            if(op == ">")  return Value(l >  r);
-            if(op == ">=") return Value(l >= r);
-        }
-
-        if(left_val.type == ValueType::BOOLEAN && right_val.type == ValueType::BOOLEAN)
-        {
-            bool l = std::get<bool>(left_val.data);
-            bool r = std::get<bool>(right_val.data);
-
-            if(op == "==") return Value(l == r);
-            if(op == "!=") return Value(l != r);
-            if(op == "and" || op == "&&") return Value(l && r);
-            if(op == "or" || op == "||") return Value(l || r);
-        }
-
-        if(left_val.type == ValueType::STRING || right_val.type == ValueType::STRING)
-        {
-            if(op == "+") {return Value(left_val.to_string() + right_val.to_string());}
-        }
-
-        std::cerr << "[ERROR] Unsupported operand types" << std::endl;
-        return {};
-    }
-
-    if(expr->type == ExpressionType::VARIABLE)
-    {
-        auto* var = dynamic_cast<VariableExpr*>(expr);
-        return get_var(var->name);
-    }
-
-    if(expr->type == ExpressionType::STRING)
-    {
-        auto* s = dynamic_cast<StringExpr*>(expr);
-        return Value(s->value);
-    }
-
-    if(expr->type == ExpressionType::BOOLEAN)
-    {
-        auto* b = dynamic_cast<BoolExpr*>(expr);
-        return Value(b->value);
-    }
-
-    if(expr->type == ExpressionType::MEMBER_ACCESS)
-    {
-        auto* ma = dynamic_cast<MemberAccessExpr*>(expr);
-
-        if(auto* ve = dynamic_cast<VariableExpr*>(ma->object.get()))
-        {
-            auto itE = g_enums.find(ve->name);
-            if(itE != g_enums.end())
-            {
-                auto itM = itE->second.find(ma->member);
-                if(itM != itE->second.end()) {return Value(itM->second);}
-
-                std::cerr << "[ERROR] Unknown enum member: " << ve->name << "." << ma->member << "\n";
-                return {};
-            }
-        }
-
-        std::cerr << "[ERROR] Member access not supported for this expression type\n";
-        return {};
-    }
-
-    if(expr->type == ExpressionType::FUNCTION_CALL)
-    {
-        auto* call = dynamic_cast<FunctionCallExpr*>(expr);
-        auto* var_expr = dynamic_cast<VariableExpr*>(call->callee.get());
-        if(!var_expr) {std::cerr << "[ERROR] Only variable-style calls supported (e.g. foo(1))\n"; return {};}
-        std::string function_name = var_expr->name;
-
-        std::vector<Value> args;
-        for(auto& arg : call->arguments)
-        {
-            args.push_back(evaluate(arg.get(), variables));
-        }
-
-        auto itb = builtin_functions.find(function_name);
-        if(itb != builtin_functions.end()) { return itb->second(args); }
-
-        if(g_private)
-        {
-            auto it_file = g_private->find(g_current_file);
-            if(it_file != g_private->end())
-            {
-                auto itp = it_file->second.find(function_name);
-                if(itp != it_file->second.end())
-                {
-                    FunctionStatement* fn = itp->second;
-                    if(args.size() != fn->parameters.size()) {std::cerr << "[ERROR] Function " << function_name << " expects " << fn->parameters.size() << " args, got " << args.size() << "\n"; return {};}
-
-                    push_scope();
-                    for(size_t i = 0; i < args.size(); ++i)
-                    {
-                        set_var(fn->parameters[i], args[i], true);
-                    }
-
-                    try
-                    {
-                        evaluate(fn->body.get(), env_stack.back());
-                        pop_scope();
-                        return {};
-                    }
-                    catch(const ReturnException& e)
-                    {
-                        pop_scope();
-                        return e.value;
-                    }
-                }
-            }
-        }
-
-        if(g_public)
-        {
-            auto itg = g_public->find(function_name);
-            if(itg != g_public->end())
-            {
-                FunctionStatement* fn = itg->second.first;
-                const std::string& def_file = itg->second.second;
-
-                if(args.size() != fn->parameters.size()) {std::cerr << "[ERROR] Function " << function_name << " expects " << fn->parameters.size() << " args, got " << args.size() << "\n"; return {};}
-
-                std::string prev = g_current_file;
-                g_current_file = def_file;
-
-                push_scope();
-                for(size_t i = 0; i < args.size(); ++i)
-                {
-                    set_var(fn->parameters[i], args[i], true);
-                }
-
-                try
-                {
-                    Value res = evaluate(fn->body.get(), env_stack.back());
-                    pop_scope();
-                    g_current_file = prev;
-                    return res;
-                }
-                catch(const ReturnException& e)
-                {
-                    pop_scope();
-                    g_current_file = prev;
-                    return e.value;
-                }
-            }
-        }
-
-        std::cerr << "[ERROR] Unknown function: " << function_name << "\n";
-        return {};
-    }
-
-    if(expr->type == ExpressionType::ARRAY_LITERAL)
-    {
-        auto* arr = dynamic_cast<ArrayLiteralExpr*>(expr);
-        std::vector<Value> values;
-
-        for(auto& e : arr->elements)
-        {
-            values.push_back(evaluate(e.get(), variables));
-        }
-
-        return Value(values);
-    }
-
-    if(expr->type == ExpressionType::INDEX)
-    {
-        auto* idx = dynamic_cast<IndexExpr*>(expr);
-        Value container_val = evaluate(idx->array.get(), variables);
-        Value index_val = evaluate(idx->index.get(), variables);
-
-        if(container_val.type == ValueType::ARRAY)
-        {
-            int i = 0;
-            if(index_val.type == ValueType::INTEGER) {i = std::get<int>(index_val.data);}
-            else if(index_val.type == ValueType::DOUBLE) {i = static_cast<int>(std::get<double>(index_val.data));}
-            else {std::cerr << "[ERROR] Array index must be a number (int or double)\n"; return {};}
-
-            auto& arr = std::get<std::vector<Value>>(container_val.data);
-            if(i < 0 || i >= static_cast<int>(arr.size())) {std::cerr << "[ERROR] Array index out of bounds\n"; return {};}
-
-            return arr[i];
-        }
-
-        if(container_val.type == ValueType::DICTIONARY)
-        {
-            std::string key;
-
-            if(index_val.type == ValueType::STRING) {key = std::get<std::string>(index_val.data);}
-            else {key = index_val.to_string();}
-
-            const auto& dict = *std::get<DictionaryPtr>(container_val.data);
-            auto it = dict.find(key);
-
-            if(it == dict.end()) {std::cerr << "[ERROR] Key not found in directory: " << key << "\n"; return {};}
-
-            return it->second;
-        }
-
-        std::cerr << "[ERROR] Indexing non-array/non-dictionary value\n";
-        return {};
-    }
-
-    if(expr->type == ExpressionType::DICTIONARY_LITERAL)
-    {
-        auto* dict_expr = dynamic_cast<DictionaryLiteralExpr*>(expr);
-        Dictionary dict;
-
-        for(auto& [key_expr, val_expr] : dict_expr->entries)
-        {
-            Value k = evaluate(key_expr.get(), variables);
-            Value v = evaluate(val_expr.get(), variables);
-
-            if(k.type != ValueType::STRING) {std::cerr << "[ERROR] Dictionary keys must be strings\n"; return {};}
-
-            dict[std::get<std::string>(k.data)] = v;
-        }
-
-        return Value(dict);
-    }
-
-    std::cerr << "[ERROR] Unknown expression type" << std::endl;
-    return {};
+    _file_stack.push_back(std::move(current_file));
 }
 
-Value evaluate(Statement* stmt, std::unordered_map<std::string, Value>& variables)
+Value Evaluator::eval_expression(Expression* expr)
 {
-    if(auto* assign = dynamic_cast<Assignment*>(stmt))
-    {
-        Value val = evaluate(assign->value.get(), env_stack.back());
-        set_var(assign->name, val, assign->is_let);
-        return val;
-    }
+    if(!expr) {return {};}
 
-    if(auto* assign_stmt = dynamic_cast<AssignmentStatement*>(stmt))
+    switch(expr->type)
     {
-        Value val = evaluate(assign_stmt->assignment.get(), variables);
-        return val;
-    }
+        case ExpressionType::NUMBER: {return dynamic_cast<NumberExpr *>(expr)->value;}
 
-    if(auto* expr_stmt = dynamic_cast<ExpressionStatement*>(stmt)) {return evaluate(expr_stmt->expression.get(), variables);}
+        case ExpressionType::STRING: {return Value(dynamic_cast<StringExpr *>(expr)->value);}
 
-    if(auto* block_stmt = dynamic_cast<BlockStatement*>(stmt))
-    {
-        Value result;
-        for(const auto& s : block_stmt->statements)
+        case ExpressionType::BOOLEAN: {return Value(dynamic_cast<BoolExpr *>(expr)->value);}
+
+        case ExpressionType::VARIABLE:
         {
-            result = evaluate(s.get(), variables);
-        }
-        return result;
-    }
-
-    if(auto* enum_stmt = dynamic_cast<EnumStatement*>(stmt))
-    {
-        g_enums[enum_stmt->name] = enum_stmt->members;
-        return {};
-    }
-
-    if(auto* if_stmt = dynamic_cast<IfStatement*>(stmt))
-    {
-        Value cond = evaluate(if_stmt->condition.get(), variables);
-
-        bool truthy = false;
-        if(cond.type == ValueType::INTEGER) truthy = std::get<int>(cond.data) != 0;
-        else if(cond.type == ValueType::DOUBLE) truthy = std::get<double>(cond.data) != 0.0;
-        else if(cond.type == ValueType::BOOLEAN) truthy = std::get<bool>(cond.data);
-        else {std::cerr << "[ERROR] Invalid type in if-statement condition\n"; return {};}
-
-        return truthy ? evaluate(if_stmt->then_branch.get(), variables)
-            : (if_stmt->else_branch ? evaluate(if_stmt->else_branch.get(), variables) : Value());
-    }
-
-    if(auto* while_stmt = dynamic_cast<WhileStatement*>(stmt))
-    {
-        while(true)
-        {
-            Value cond = evaluate(while_stmt->condition.get(), variables);
-
-            bool truthy = false;
-            if(cond.type == ValueType::INTEGER) truthy = std::get<int>(cond.data) != 0;
-            else if(cond.type == ValueType::DOUBLE) truthy = std::get<double>(cond.data) != 0.0;
-            else if(cond.type == ValueType::BOOLEAN) truthy = std::get<bool>(cond.data);
-            else {std::cerr << "[ERROR] Invalid type in while-statement condition\n"; break;}
-
-            if(!truthy) {break;}
-            evaluate(while_stmt->body.get(), variables);
-        }
-        return {};
-    }
-
-    if(auto* repeat_stmt = dynamic_cast<RepeatStatement*>(stmt))
-    {
-        Value count_val = evaluate(repeat_stmt->count.get(), variables);
-        int count = 0;
-
-        if(count_val.type == ValueType::INTEGER) count = std::get<int>(count_val.data);
-        else if(count_val.type == ValueType::DOUBLE) count = static_cast<int>(std::get<double>(count_val.data));
-        else {std::cerr << "[ERROR] repeat count must be number\n"; return {};}
-
-        for(int i = 0; i < count; ++i)
-        {
-            evaluate(repeat_stmt->body.get(), variables);
+            auto* var = dynamic_cast<VariableExpr*>(expr);
+            return _env.get(var->name);
         }
 
-        return {};
-    }
-
-    if(auto* for_stmt = dynamic_cast<ForStatement*>(stmt))
-    {
-        if(for_stmt->initializer) {evaluate(for_stmt->initializer.get(), variables);}
-
-        while(true)
+        case ExpressionType::UNARY:
         {
-            if(for_stmt->condition)
+            auto* unary = dynamic_cast<UnaryExpr*>(expr);
+            Value right_val = eval_expression(unary->right.get());
+
+            switch(unary->op)
             {
-                Value cond = evaluate(for_stmt->condition.get(), variables);
-                bool truthy = false;
-
-                if(cond.type == ValueType::BOOLEAN) truthy = std::get<bool>(cond.data);
-                else if(cond.type == ValueType::INTEGER) truthy = std::get<int>(cond.data) != 0;
-                else if(cond.type == ValueType::DOUBLE) truthy = std::get<double>(cond.data) != 0.0;
-                else {std::cerr << "[ERROR] Invalid type in for-loop condition\n"; break;}
-
-                if(!truthy) {break;}
-            }
-
-            evaluate(for_stmt->body.get(), variables);
-
-            if(for_stmt->increment) {evaluate(for_stmt->increment.get(), variables);}
-        }
-
-        return {};
-    }
-
-    if(auto* foreach_stmt = dynamic_cast<ForeachStatement*>(stmt))
-    {
-        Value iterable_val = evaluate(foreach_stmt->iterable.get(), variables);
-
-        if(iterable_val.type != ValueType::ARRAY) {std::cerr << "[ERROR] Foreach expects an array\n"; return {};}
-
-        auto& arr = std::get<std::vector<Value>>(iterable_val.data);
-        for(auto& elem : arr)
-        {
-            push_scope();
-            set_var(foreach_stmt->var_name, elem, true);
-            evaluate(foreach_stmt->body.get(), env_stack.back());
-            pop_scope();
-        }
-
-        return {};
-    }
-
-    if(auto* return_stmt = dynamic_cast<ReturnStatement*>(stmt))
-    {
-        Value v = return_stmt->value ? evaluate(return_stmt->value.get(), variables) : Value();
-        throw ReturnException(v);
-    }
-
-    if(auto* ia_stmt = dynamic_cast<IndexAssignment*>(stmt))
-    {
-        std::vector<Value> raw_indices;
-        Expression* cur = ia_stmt->target.get();
-
-        while(auto* idx = dynamic_cast<IndexExpr*>(cur))
-        {
-            Value iv = evaluate(idx->index.get(), variables);
-            raw_indices.push_back(iv);
-            cur = idx->array.get();
-        }
-
-        auto* var = dynamic_cast<VariableExpr*>(cur);
-        if(!var) {std::cerr << "[ERROR] Left side of indexed assignment must be a variable\n"; return {};}
-
-        Value container_val = get_var(var->name);
-        Value new_val = evaluate(ia_stmt->value.get(), variables);
-
-        std::reverse(raw_indices.begin(), raw_indices.end());
-        Value* current = &container_val;
-
-        for(size_t level = 0; level < raw_indices.size(); ++level)
-        {
-            Value idx = raw_indices[level];
-            bool last = (level + 1 == raw_indices.size());
-
-            if(current->type == ValueType::ARRAY)
-            {
-                int i = 0;
-                if(idx.type == ValueType::INTEGER) {i = std::get<int>(idx.data);}
-                else if(idx.type == ValueType::DOUBLE) {i = static_cast<int>(std::get<double>(idx.data));}
-                else {std::cerr << "[ERROR] Array index must be a number (int or double)\n"; return {};}
-
-                auto& vec = std::get<std::vector<Value>>(current->data);
-
-                if(i < 0) {std::cerr << "[ERROR] Negative array index\n"; return {};}
-                if(static_cast<size_t>(i) >= vec.size()) vec.resize(i + 1, Value());
-
-                if(last) {vec[i] = new_val;}
-                else {current = &vec[i];}
-            }
-            else if(current->type == ValueType::DICTIONARY)
-            {
-                std::string key = (idx.type == ValueType::STRING) ? std::get<std::string>(idx.data) : idx.to_string();
-
-                auto& dict = *std::get<DictionaryPtr>(current->data);
-
-                if(last) {dict[key] = new_val;}
-                else
+                case '+':
                 {
-                    auto it = dict.find(key);
-                    if(it == dict.end())
-                    {
-                        dict[key] = Value(Dictionary{});
-                        current = &dict[key];
-                    }
-                    else {current = &it->second;}
+                    if(right_val.type == ValueType::INTEGER) {return Value(std::get<int>(right_val.data));}
+                    if(right_val.type == ValueType::DOUBLE)  {return Value(std::get<double>(right_val.data));}
+                    break;
+                }
+
+                case '-':
+                {
+                    if(right_val.type == ValueType::INTEGER) {return Value(-std::get<int>(right_val.data));}
+                    if(right_val.type == ValueType::DOUBLE)  {return Value(-std::get<double>(right_val.data));}
+                    break;
+                }
+
+                case '!':
+                {
+                    bool val = false;
+                    if(right_val.type == ValueType::BOOLEAN)      {val = std::get<bool>(right_val.data);}
+                    else if(right_val.type == ValueType::INTEGER) {val = std::get<int>(right_val.data) != 0;}
+                    else if(right_val.type == ValueType::DOUBLE)  {val = std::get<double>(right_val.data) != 0.0;}
+                    else if(right_val.type == ValueType::STRING)  {val = !right_val.to_string().empty();}
+                    return Value(!val);
                 }
             }
-            else {std::cerr << "[ERROR] Indexed assignment not supported for this type\n"; return {};}
+
+            std::cerr << "[ERROR] Unsupported unary operand type operator\n";
+            return {};
         }
 
-        set_var(var->name, container_val, false);
-        return new_val;
-    }
+        case ExpressionType::BINARY:
+        {
+            auto* bin = dynamic_cast<BinaryExpr*>(expr);
+            Value left = eval_expression(bin->left.get());
+            Value right = eval_expression(bin->right.get());
+            const std::string& op = bin->op;
 
-    std::cerr << "[ERROR] Unknown statement type\n";
-    return {};
+            if((left.type == ValueType::INTEGER || left.type == ValueType::DOUBLE) && (right.type == ValueType::INTEGER || right.type == ValueType::DOUBLE))
+            {
+                double l = (left.type == ValueType::DOUBLE) ? std::get<double>(left.data) : std::get<int>(left.data);
+                double r = (right.type == ValueType::DOUBLE) ? std::get<double>(right.data) : std::get<int>(right.data);
+
+                if(op == "+") {return Value(l + r);}
+                if(op == "-") {return Value(l - r);}
+                if(op == "*") {return Value(l * r);}
+                if(op == "/") {return (r != 0.0) ? Value(l / r) : Value(0.0);}
+
+                if(op == "==") {return Value(l == r);}
+                if(op == "!=") {return Value(l != r);}
+                if(op == "<")  {return Value(l <  r);}
+                if(op == "<=") {return Value(l <= r);}
+                if(op == ">")  {return Value(l >  r);}
+                if(op == ">=") {return Value(l >= r);}
+            }
+
+            if(left.type == ValueType::BOOLEAN && right.type == ValueType::BOOLEAN)
+            {
+                bool l = std::get<bool>(left.data);
+                bool r = std::get<bool>(right.data);
+
+                if(op == "==") {return Value(l == r);}
+                if(op == "!=") {return Value(l != r);}
+                if(op == "and" || op == "&&") {return Value(l && r);}
+                if(op == "or"  || op == "||") {return Value(l || r);}
+            }
+
+            if(op == "+" && (left.type == ValueType::STRING || right.type == ValueType::STRING))
+            {
+                return Value(left.to_string() + right.to_string());
+            }
+
+            std::cerr << "[ERROR] Unsupported operand types for binary operator '" << op << "'\n";
+            return {};
+        }
+
+        case ExpressionType::FUNCTION_CALL:
+        {
+            auto* call = dynamic_cast<FunctionCallExpr*>(expr);
+            auto* callee_var = dynamic_cast<VariableExpr*>(call->callee.get());
+
+            if(!callee_var) {std::cerr << "[ERROR] Only simple function names supported (e.g. foo(1))\n"; return {};}
+
+            std::string fn_name = callee_var->name;
+
+            std::vector<Value> args;
+            for(auto& arg : call->arguments)
+            {
+                args.push_back(eval_expression(arg.get()));
+            }
+
+            if(auto it = builtin_functions.find(fn_name); it != builtin_functions.end())
+            {
+                try {return it->second(args);}
+                catch(...) {std::cerr << "[ERROR] Exception in builtin function: " << fn_name << "\n"; return {};}
+            }
+
+            const FunctionRef* ref = _index.find_function(fn_name, current_file());
+            if(!ref) {std::cerr << "[ERROR] Unknown function: " << fn_name << "\n"; return {};}
+
+            FunctionStatement* fn = ref->func;
+            if(args.size() != fn->parameters.size()) {std::cerr << "[ERROR] Function " << fn_name << " expects " << fn->parameters.size() << " args, got " << args.size() << "\n"; return {};}
+
+            bool pushed_file = false;
+            if(ref->is_public && ref->file != current_file())
+            {
+                _file_stack.push_back(ref->file);
+                pushed_file = true;
+            }
+
+            _env.push_scope();
+            for(size_t i = 0; i < args.size(); ++i)
+            {
+                _env.define(fn->parameters[i], args[i]);
+            }
+
+            Value result;
+            try
+            {
+                result = eval_statement(fn->body.get());
+            }
+            catch(const ReturnException& e)
+            {
+                result = e.value;
+            }
+
+            _env.pop_scope();
+            if(pushed_file) {_file_stack.pop_back();}
+            return result;
+        }
+
+        case ExpressionType::ARRAY_LITERAL:
+        {
+            auto* arr = dynamic_cast<ArrayLiteralExpr*>(expr);
+            std::vector<Value> elems;
+            for(auto& e : arr->elements)
+            {
+                elems.push_back(eval_expression(e.get()));
+            }
+
+            return Value(elems);
+        }
+
+        case ExpressionType::DICTIONARY_LITERAL:
+        {
+            auto* dict_expr = dynamic_cast<DictionaryLiteralExpr*>(expr);
+            Dictionary dict;
+            for(auto& [key, val] : dict_expr->entries)
+            {
+                Value k = eval_expression(key.get());
+                Value v = eval_expression(val.get());
+                if(k.type != ValueType::STRING) {std::cerr << "[ERROR] Dictionary key must be string literal\n"; return {};}
+                dict[std::get<std::string>(k.data)] = v;
+            }
+            return Value(dict);
+        }
+
+        case ExpressionType::INDEX:
+        {
+            auto* idx = dynamic_cast<IndexExpr*>(expr);
+            Value container = eval_expression(idx->array.get());
+            Value index_val = eval_expression(idx->index.get());
+
+            if(container.type == ValueType::ARRAY)
+            {
+                int i = 0;
+                if(index_val.type == ValueType::INTEGER)     {i = std::get<int>(index_val.data);}
+                else if(index_val.type == ValueType::DOUBLE) {i = static_cast<int>(std::get<double>(index_val.data));}
+                else                                         {std::cerr << "[ERROR] Array index must be numeric\n"; return {};}
+
+                auto& arr = std::get<std::vector<Value>>(container.data);
+                if(i < 0 || i >= static_cast<int>(arr.size())) {std::cerr << "[ERROR] Array index out of bounds\n"; return {};}
+
+                return arr[i];
+            }
+
+            if(container.type == ValueType::DICTIONARY)
+            {
+                std::string key;
+                if(index_val.type == ValueType::STRING)  {key = std::get<std::string>(index_val.data);}
+                else                                     {key = index_val.to_string();}
+
+                const auto &dict = *std::get<DictionaryPtr>(container.data);
+                auto it = dict.find(key);
+                if(it == dict.end()) {std::cerr << "[ERROR] Key not found in dictionary: " << key << "\n"; return {};}
+                return it->second;
+            }
+        }
+
+        default: std::cerr << "[WARN] Expression type not yet implemented!\n"; return {};
+    }
+}
+
+Value Evaluator::eval_statement(Statement* stmt)
+{
+    if(!stmt) return {};
+
+    switch(stmt->type)
+    {
+        case StatementType::ASSIGNMENT:
+        {
+            auto* assign = dynamic_cast<Assignment*>(stmt);
+            Value val = eval_expression(assign->value.get());
+            if(assign->is_let) {_env.define(assign->name, val);}
+            else               {_env.assign(assign->name, val);}
+            return val;
+        }
+
+        case StatementType::ASSIGNMENT_STATEMENT:
+        {
+            auto* assign_stmt = dynamic_cast<AssignmentStatement*>(stmt);
+            return eval_statement(assign_stmt->assignment.get());
+        }
+
+        case StatementType::EXPRESSION:
+        {
+            auto* expr_stmt = dynamic_cast<ExpressionStatement*>(stmt);
+            return eval_expression(expr_stmt->expression.get());
+        }
+
+        case StatementType::IF:
+        {
+            auto* if_stmt = dynamic_cast<IfStatement*>(stmt);
+            Value cond = eval_expression(if_stmt->condition.get());
+
+            bool truthy = false;
+            if(cond.type == ValueType::BOOLEAN)      {truthy = std::get<bool>(cond.data);}
+            else if(cond.type == ValueType::INTEGER) {truthy = std::get<int>(cond.data) != 0;}
+            else if(cond.type == ValueType::DOUBLE)  {truthy = std::get<double>(cond.data) != 0.0;}
+            else                                     {std::cerr << "[ERROR] Invalid condition type in if-statement\n";}
+
+            if(truthy) {return eval_statement(if_stmt->then_branch.get());}
+            else if(if_stmt->else_branch) {return eval_statement(if_stmt->else_branch.get());}
+
+            return {};
+        }
+
+        case StatementType::WHILE:
+        {
+            auto* while_stmt = dynamic_cast<WhileStatement*>(stmt);
+            Value result;
+
+            while(true)
+            {
+                Value cond = eval_expression(while_stmt->condition.get());
+                bool truthy = false;
+
+                if(cond.type == ValueType::BOOLEAN)      {truthy = std::get<bool>(cond.data);}
+                else if(cond.type == ValueType::INTEGER) {truthy = std::get<int>(cond.data) != 0;}
+                else if(cond.type == ValueType::DOUBLE)  {truthy = std::get<double>(cond.data) != 0.0;}
+                else                                     {std::cerr << "[ERROR] Invalid while condition type\n";}
+
+                if(!truthy) {break;}
+
+                result = eval_statement(while_stmt->body.get());
+            }
+
+            return result;
+        }
+
+        case StatementType::REPEAT:
+        {
+            auto* repeat_stmt = dynamic_cast<RepeatStatement*>(stmt);
+            Value count_val = eval_expression(repeat_stmt->count.get());
+
+            int count = 0;
+            if(count_val.type == ValueType::INTEGER)     {count = std::get<int>(count_val.data);}
+            else if(count_val.type == ValueType::DOUBLE) {count = static_cast<int>(std::get<double>(count_val.data));}
+            else                                         {std::cerr << "[ERROR] repeat() count must be numeric\n"; return {};}
+
+            Value result;
+            for(int i = 0; i < count; ++i)
+            {
+                result = eval_statement(repeat_stmt->body.get());
+            }
+
+            return result;
+        }
+
+        case StatementType::FOR:
+        {
+            auto* for_stmt = dynamic_cast<ForStatement*>(stmt);
+            Value result;
+
+            _env.push_scope();
+            if(for_stmt->initializer) {eval_statement(for_stmt->initializer.get());}
+
+            while(true)
+            {
+                bool truthy = true;
+                if(for_stmt->condition)
+                {
+                    Value cond = eval_expression(for_stmt->condition.get());
+
+                    if(cond.type == ValueType::BOOLEAN)      {truthy = std::get<bool>(cond.data);}
+                    else if(cond.type == ValueType::INTEGER) {truthy = std::get<int>(cond.data) != 0;}
+                    else if(cond.type == ValueType::DOUBLE)  {truthy = std::get<double>(cond.data) != 0.0;}
+                    else                                     {std::cerr << "[ERROR] Invalid for-loop condition type\n"; break;}
+                }
+
+                if(!truthy) {break;}
+
+                result = eval_statement(for_stmt->body.get());
+
+                if(for_stmt->increment)
+                {
+                    eval_statement(for_stmt->increment.get());
+                }
+            }
+
+            _env.pop_scope();
+            return result;
+        }
+
+        case StatementType::FOREACH:
+        {
+            auto* foreach_stmt = dynamic_cast<ForeachStatement*>(stmt);
+            Value iterable = eval_expression(foreach_stmt->iterable.get());
+
+            if(iterable.type != ValueType::ARRAY) {std::cerr << "[ERROR] foreach expects an array\n"; return {};}
+
+            const auto& arr = std::get<std::vector<Value>>(iterable.data);
+            Value result;
+
+            for(const auto& elem : arr)
+            {
+                _env.push_scope();
+                _env.define(foreach_stmt->var_name, elem);
+                result = eval_statement(foreach_stmt->body.get());
+                _env.pop_scope();
+            }
+
+            return result;
+        }
+
+        // тут ничего не надо, просто указать такой тип, ибо функции уже до этого момента проиндексированы
+        case StatementType::FUNCTION: {return {};}
+
+        case StatementType::BLOCK:
+        {
+            auto* block = dynamic_cast<BlockStatement*>(stmt);
+            _env.push_scope();
+            Value result;
+            for(const auto& s : block->statements)
+            {
+                result = eval_statement(s.get());
+            }
+            _env.pop_scope();
+            return result;
+        }
+
+        case StatementType::RETURN:
+        {
+            auto* ret = dynamic_cast<ReturnStatement*>(stmt);
+            Value val = ret->value ? eval_expression(ret->value.get()) : Value();
+            throw ReturnException(val);
+        }
+
+        case StatementType::INDEX_ASSIGNMENT:
+        {
+            auto* ia = dynamic_cast<IndexAssignment*>(stmt);
+
+            std::vector<Value> indices;
+            Expression* target_expr = ia->target.get();
+            while(auto* idx = dynamic_cast<IndexExpr*>(target_expr))
+            {
+                indices.push_back(eval_expression(idx->index.get()));
+                target_expr = idx->array.get();
+            }
+
+            auto* var = dynamic_cast<VariableExpr*>(target_expr);
+            if(!var) {std::cerr << "[ERROR] Indexed assignment target must be variable\n"; return {};}
+
+            Value container = _env.get(var->name);
+            Value new_val = eval_expression(ia->value.get());
+            std::reverse(indices.begin(), indices.end());
+            Value* cur = &container;
+
+            for(size_t level = 0; level < indices.size(); ++level)
+            {
+                Value idx_val = indices[level];
+                bool last = (level + 1 == indices.size());
+
+                if(cur->type == ValueType::ARRAY)
+                {
+                    int i = (idx_val.type == ValueType::INTEGER) ? std::get<int>(idx_val.data) : static_cast<int>(std::get<double>(idx_val.data));
+                    auto& arr = std::get<std::vector<Value>>(cur->data);
+                    if(i < 0)                             {std::cerr << "[ERROR] Negative array index\n"; return {};}
+                    if(i >= static_cast<int>(arr.size())) {arr.resize(i + 1, Value());}
+                    if(last)                              {arr[i] = new_val;}
+                    else                                  {cur = &arr[i];}
+                }
+                else if(cur->type == ValueType::DICTIONARY)
+                {
+                    std::string key = (idx_val.type == ValueType::STRING) ? std::get<std::string>(idx_val.data) : idx_val.to_string();
+                    auto& dict = *std::get<DictionaryPtr>(cur->data);
+                    if(last) {dict[key] = new_val;}
+                    else
+                    {
+                        auto it = dict.find(key);
+                        if(it == dict.end())
+                        {
+                            dict[key] = Value(Dictionary{});
+                            cur = &dict[key];
+                        }
+                        else {cur = &it->second;}
+                    }
+                }
+                else {std::cerr << "[ERROR] Indexed assignment not supported for this type\n"; return {};}
+            }
+
+            _env.assign(var->name, container);
+            return new_val;
+        }
+
+        case StatementType::ENUM:
+        {
+            auto* enum_stmt = dynamic_cast<EnumStatement*>(stmt);
+            for(const auto& [name, val] : enum_stmt->members)
+            {
+                _env.define(enum_stmt->name + "." + name, Value(val));
+            }
+            return {};
+        }
+
+        default: std::cerr << "[WARN] Statement type not yet implemented\n"; return {};
+    }
 }
