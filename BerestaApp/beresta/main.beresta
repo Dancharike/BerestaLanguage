@@ -48,3 +48,6 @@ console_print(x);
 // проверка, что копия ещё жива
 console_print("Check for existing dictionary copy:");
 console_print(copy);
+
+console_print("test");
+unknown_function();

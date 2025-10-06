@@ -30,6 +30,7 @@ add_library(BerestaCore STATIC
         builtin/Matrix2D.h
         environment/Environment.h
         interpreter/FunctionIndex.h
+        diagnostics/Diagnostics.h
 )
 
 target_include_directories(BerestaCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

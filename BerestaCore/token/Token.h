@@ -62,8 +62,10 @@ struct Token
     TokenType type;
     std::string value;
     size_t position;
+    int line;
+    int column;
 
-    Token(TokenType type, std::string value, size_t position) : type(type), value(std::move(value)), position(position) {}
+    Token(TokenType type, std::string value, size_t position, int line = -1, int column = -1) : type(type), value(std::move(value)), position(position), line(line), column(column) {}
 };
 
 

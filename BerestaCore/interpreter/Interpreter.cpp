@@ -35,11 +35,16 @@ void Interpreter::execute_file(const std::string& filename)
     if(it == _files.end()) {std::cerr << "[ERROR] File not registered: " << filename << "\n"; return;}
 
     interpret(it->second.ast, filename);
+
+    if(_diag.has_error())
+    {
+        _diag.print_all();
+    }
 }
 
 Value Interpreter::interpret(const std::vector<std::unique_ptr<Statement>>& statements, const std::string& current_file)
 {
-    Evaluator evaluator(_env, _functions, current_file);
+    Evaluator evaluator(_env, _functions, current_file, _diag);
 
     Value last_value;
     for(const auto& stmt : statements)

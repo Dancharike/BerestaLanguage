@@ -34,7 +34,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_logic()
     {
         Token op = tokens[position - 1];
         auto right = parse_comparison();
-        expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right));
+        expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right), op.line, op.column);
     }
 
     return expr;
@@ -44,12 +44,11 @@ std::unique_ptr<Expression> ExpressionParser::parse_comparison()
 {
     auto expr = parse_term();
 
-    while(match(TokenType::EQUAL_EQUAL) || match(TokenType::BANG_EQUAL) || match(TokenType::LESS) ||
-        match(TokenType::LESS_EQUAL) || match(TokenType::GREATER) || match((TokenType::GREATER_EQUAL)))
+    while(match(TokenType::EQUAL_EQUAL) || match(TokenType::BANG_EQUAL) || match(TokenType::LESS) || match(TokenType::LESS_EQUAL) || match(TokenType::GREATER) || match(TokenType::GREATER_EQUAL))
     {
         Token op = tokens[position - 1];
         auto right = parse_term();
-        expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right));
+        expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right), op.line, op.column);
     }
 
     return expr;
@@ -63,7 +62,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_term()
     {
         Token op = advance();
         auto right = parse_factor();
-        expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right));
+        expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right), op.line, op.column);
     }
 
     return expr;
@@ -77,7 +76,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_factor()
     {
         Token op = advance();
         auto right = parse_postfix(parse_primary());
-        expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right));
+        expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right), op.line, op.column);
     }
 
     return expr;
@@ -88,38 +87,37 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
     if(peek().type == TokenType::BANG || peek().type == TokenType::MINUS || peek().type == TokenType::PLUS)
     {
         Token op = advance();
-
         auto right = parse_primary();
-        char op_char;
-
-        if(op.type == TokenType::BANG) {op_char = '!';}
-        else if(op.type == TokenType::MINUS) {op_char = '-';}
-        else {op_char = '+';}
-
-        return std::make_unique<UnaryExpr>(op_char, std::move(right));
+        char op_char = (op.type == TokenType::BANG) ? '!' : (op.type == TokenType::MINUS ? '-' : '+');
+        return std::make_unique<UnaryExpr>(op_char, std::move(right), op.line, op.column);
     }
 
-    if(match(TokenType::TRUE)) {return std::make_unique<BoolExpr>(true);}
-
-    if(match(TokenType::FALSE)) {return std::make_unique<BoolExpr>(false);}
+    if(match(TokenType::TRUE))  {Token t = tokens[position - 1]; return std::make_unique<BoolExpr>(true,  t.line, t.column);}
+    if(match(TokenType::FALSE)) {Token t = tokens[position - 1]; return std::make_unique<BoolExpr>(false, t.line, t.column);}
 
     if(match(TokenType::NUMBER))
     {
-        const std::string& val = tokens[position - 1].value;
-        if(val.find('.') != std::string::npos) {return std::make_unique<NumberExpr>(std::stod(val));}
-        else {return std::make_unique<NumberExpr>(std::stoi(val));}
+        Token t = tokens[position - 1];
+        const std::string& val = t.value;
+        if(val.find('.') != std::string::npos) {return std::make_unique<NumberExpr>(std::stod(val), t.line, t.column);}
+        else                                      {return std::make_unique<NumberExpr>(std::stoi(val), t.line, t.column);}
     }
 
-    if(match(TokenType::STRING)) {return std::make_unique<StringExpr>(tokens[position - 1].value);}
+    if(match(TokenType::STRING))
+    {
+        Token t = tokens[position - 1];
+        return std::make_unique<StringExpr>(t.value, t.line, t.column);
+    }
 
     if(match(TokenType::IDENTIFIER))
     {
-        std::string name = tokens[position - 1].value;
-        return std::make_unique<VariableExpr>(name);
+        Token t = tokens[position - 1];
+        return std::make_unique<VariableExpr>(t.value, t.line, t.column);
     }
 
     if(match(TokenType::LEFT_PAREN))
     {
+        Token left_paren = tokens[position - 1];
         auto expr = parse_expression();
         if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Expected ')' after expression.\n"; return nullptr;}
         return expr;
@@ -127,6 +125,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
 
     if(match(TokenType::LEFT_BRACKET))
     {
+        Token lb = tokens[position - 1];
         std::vector<std::unique_ptr<Expression>> elems;
         if(peek().type != TokenType::RIGHT_BRACKET)
         {
@@ -137,12 +136,12 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
         }
 
         if(!match(TokenType::RIGHT_BRACKET)) {std::cerr << "Expected ']' after array literal\n"; return nullptr;}
-
-        return std::make_unique<ArrayLiteralExpr>(std::move(elems));
+        return std::make_unique<ArrayLiteralExpr>(std::move(elems), lb.line, lb.column);
     }
 
     if(match(TokenType::LEFT_BRACE))
     {
+        Token lb = tokens[position - 1];
         std::vector<std::pair<std::unique_ptr<Expression>, std::unique_ptr<Expression>>> entries;
 
         if(peek().type != TokenType::RIGHT_BRACE)
@@ -150,7 +149,6 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
             do
             {
                 if(peek().type != TokenType::STRING) {std::cerr << "[ERROR] Dictionary keys must be string literals\n"; return nullptr;}
-
                 auto key = parse_expression();
 
                 if(!match(TokenType::COLON)) {std::cerr << "Expected ':' in dictionary literal\n"; return nullptr;}
@@ -161,8 +159,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
         }
 
         if(!match(TokenType::RIGHT_BRACE)) {std::cerr << "Expected '}' after dictionary literal\n"; return nullptr;}
-
-        return std::make_unique<DictionaryLiteralExpr>(std::move(entries));
+        return std::make_unique<DictionaryLiteralExpr>(std::move(entries), lb.line, lb.column);
     }
 
     std::cerr << "Unexpected token: " << peek().value << "\n";
@@ -175,37 +172,33 @@ std::unique_ptr<Expression> ExpressionParser::parse_postfix(std::unique_ptr<Expr
     {
         if(match(TokenType::LEFT_BRACKET))
         {
+            Token lb = tokens[position - 1];
             auto index = parse_expression();
-
             if(!match(TokenType::RIGHT_BRACKET)) {std::cerr << "Expected ']' after index expression\n"; return nullptr;}
-
-            expr = std::make_unique<IndexExpr>(std::move(expr), std::move(index));
+            expr = std::make_unique<IndexExpr>(std::move(expr), std::move(index), lb.line, lb.column);
             continue;
         }
 
         if(match(TokenType::LEFT_PAREN))
         {
+            Token lp = tokens[position - 1];
             std::vector<std::unique_ptr<Expression>> args;
             if(peek().type != TokenType::RIGHT_PAREN)
             {
-                do
-                {
-                    args.push_back(parse_expression());
-                } while(match(TokenType::COMMA));
+                do {args.push_back(parse_expression());} while(match(TokenType::COMMA));
             }
 
             if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Unexpected token: " << peek().value << "\n"; return nullptr;}
-
-            expr = std::make_unique<FunctionCallExpr>(std::move(expr), std::move(args));
+            expr = std::make_unique<FunctionCallExpr>(std::move(expr), std::move(args), lp.line, lp.column);
             continue;
         }
 
         if(match(TokenType::DOT))
         {
+            Token dot = tokens[position - 1];
             if(peek().type != TokenType::IDENTIFIER) {std::cerr << "[ERROR] Expected identifier after '.'\n"; return nullptr;}
-
             std::string member = advance().value;
-            expr = std::make_unique<MemberAccessExpr>(std::move(expr), std::move(member));
+            expr = std::make_unique<MemberAccessExpr>(std::move(expr), std::move(member), dot.line, dot.column);
             continue;
         }
 

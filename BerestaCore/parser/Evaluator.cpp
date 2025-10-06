@@ -10,7 +10,7 @@
 #include <iostream>
 #include <unordered_map>
 
-Evaluator::Evaluator(Environment &env, FunctionIndex &index, std::string current_file) : _env(env), _index(index)
+Evaluator::Evaluator(Environment &env, FunctionIndex &index, std::string current_file, Diagnostics& diagnostics) : _env(env), _index(index), _diag(diagnostics)
 {
     _file_stack.push_back(std::move(current_file));
 }
@@ -65,7 +65,7 @@ Value Evaluator::eval_expression(Expression* expr)
                 }
             }
 
-            std::cerr << "[ERROR] Unsupported unary operand type operator\n";
+            _diag.error("Unsupported unary operand type operator", current_file(), expr->line);
             return {};
         }
 
@@ -110,7 +110,7 @@ Value Evaluator::eval_expression(Expression* expr)
                 return Value(left.to_string() + right.to_string());
             }
 
-            std::cerr << "[ERROR] Unsupported operand types for binary operator '" << op << "'\n";
+            _diag.error("Unsupported operand types for binary operator ", current_file(), expr->line);
             return {};
         }
 
@@ -119,7 +119,7 @@ Value Evaluator::eval_expression(Expression* expr)
             auto* call = dynamic_cast<FunctionCallExpr*>(expr);
             auto* callee_var = dynamic_cast<VariableExpr*>(call->callee.get());
 
-            if(!callee_var) {std::cerr << "[ERROR] Only simple function names supported (e.g. foo(1))\n"; return {};}
+            if(!callee_var) {_diag.error("Only simple function names supported (e.g. foo(1))", current_file(), expr->line); return {};}
 
             std::string fn_name = callee_var->name;
 
@@ -132,11 +132,11 @@ Value Evaluator::eval_expression(Expression* expr)
             if(auto it = builtin_functions.find(fn_name); it != builtin_functions.end())
             {
                 try {return it->second(args);}
-                catch(...) {std::cerr << "[ERROR] Exception in builtin function: " << fn_name << "\n"; return {};}
+                catch(...) {_diag.error("Exception in builtin function: ", current_file(), expr->line); return {};}
             }
 
             const FunctionRef* ref = _index.find_function(fn_name, current_file());
-            if(!ref) {std::cerr << "[ERROR] Unknown function: " << fn_name << "\n"; return {};}
+            if(!ref) {_diag.error("Unknown function: " + fn_name, current_file(), expr->line); return {};}
 
             FunctionStatement* fn = ref->func;
             if(args.size() != fn->parameters.size()) {std::cerr << "[ERROR] Function " << fn_name << " expects " << fn->parameters.size() << " args, got " << args.size() << "\n"; return {};}
@@ -189,7 +189,7 @@ Value Evaluator::eval_expression(Expression* expr)
             {
                 Value k = eval_expression(key.get());
                 Value v = eval_expression(val.get());
-                if(k.type != ValueType::STRING) {std::cerr << "[ERROR] Dictionary key must be string literal\n"; return {};}
+                if(k.type != ValueType::STRING) {_diag.error("Dictionary key must be string literal", current_file(), expr->line); return {};}
                 dict[std::get<std::string>(k.data)] = v;
             }
             return Value(dict);
@@ -206,10 +206,10 @@ Value Evaluator::eval_expression(Expression* expr)
                 int i = 0;
                 if(index_val.type == ValueType::INTEGER)     {i = std::get<int>(index_val.data);}
                 else if(index_val.type == ValueType::DOUBLE) {i = static_cast<int>(std::get<double>(index_val.data));}
-                else                                         {std::cerr << "[ERROR] Array index must be numeric\n"; return {};}
+                else                                         {_diag.error("Array index must be numeric", current_file(), expr->line); return {};}
 
                 auto& arr = std::get<std::vector<Value>>(container.data);
-                if(i < 0 || i >= static_cast<int>(arr.size())) {std::cerr << "[ERROR] Array index out of bounds\n"; return {};}
+                if(i < 0 || i >= static_cast<int>(arr.size())) {_diag.error("Array index out of bounds", current_file(), expr->line); return {};}
 
                 return arr[i];
             }
@@ -227,7 +227,7 @@ Value Evaluator::eval_expression(Expression* expr)
             }
         }
 
-        default: std::cerr << "[WARN] Expression type not yet implemented!\n"; return {};
+        default: _diag.warn("Expression type not yet implemented!", current_file(), expr->line); return {};
     }
 }
 
@@ -267,7 +267,7 @@ Value Evaluator::eval_statement(Statement* stmt)
             if(cond.type == ValueType::BOOLEAN)      {truthy = std::get<bool>(cond.data);}
             else if(cond.type == ValueType::INTEGER) {truthy = std::get<int>(cond.data) != 0;}
             else if(cond.type == ValueType::DOUBLE)  {truthy = std::get<double>(cond.data) != 0.0;}
-            else                                     {std::cerr << "[ERROR] Invalid condition type in if-statement\n";}
+            else                                     {_diag.error("Invalid condition type in if-statement", current_file(), stmt->line);}
 
             if(truthy) {return eval_statement(if_stmt->then_branch.get());}
             else if(if_stmt->else_branch) {return eval_statement(if_stmt->else_branch.get());}
@@ -288,7 +288,7 @@ Value Evaluator::eval_statement(Statement* stmt)
                 if(cond.type == ValueType::BOOLEAN)      {truthy = std::get<bool>(cond.data);}
                 else if(cond.type == ValueType::INTEGER) {truthy = std::get<int>(cond.data) != 0;}
                 else if(cond.type == ValueType::DOUBLE)  {truthy = std::get<double>(cond.data) != 0.0;}
-                else                                     {std::cerr << "[ERROR] Invalid while condition type\n";}
+                else                                     {_diag.error("Invalid while() condition type", current_file(), stmt->line);}
 
                 if(!truthy) {break;}
 
@@ -306,7 +306,7 @@ Value Evaluator::eval_statement(Statement* stmt)
             int count = 0;
             if(count_val.type == ValueType::INTEGER)     {count = std::get<int>(count_val.data);}
             else if(count_val.type == ValueType::DOUBLE) {count = static_cast<int>(std::get<double>(count_val.data));}
-            else                                         {std::cerr << "[ERROR] repeat() count must be numeric\n"; return {};}
+            else                                         {_diag.error("repeat() count must be numeric", current_file(), stmt->line); return {};}
 
             Value result;
             for(int i = 0; i < count; ++i)
@@ -335,7 +335,7 @@ Value Evaluator::eval_statement(Statement* stmt)
                     if(cond.type == ValueType::BOOLEAN)      {truthy = std::get<bool>(cond.data);}
                     else if(cond.type == ValueType::INTEGER) {truthy = std::get<int>(cond.data) != 0;}
                     else if(cond.type == ValueType::DOUBLE)  {truthy = std::get<double>(cond.data) != 0.0;}
-                    else                                     {std::cerr << "[ERROR] Invalid for-loop condition type\n"; break;}
+                    else                                     {_diag.error("Invalid for-loop condition type", current_file(), stmt->line); break;}
                 }
 
                 if(!truthy) {break;}
@@ -357,7 +357,7 @@ Value Evaluator::eval_statement(Statement* stmt)
             auto* foreach_stmt = dynamic_cast<ForeachStatement*>(stmt);
             Value iterable = eval_expression(foreach_stmt->iterable.get());
 
-            if(iterable.type != ValueType::ARRAY) {std::cerr << "[ERROR] foreach expects an array\n"; return {};}
+            if(iterable.type != ValueType::ARRAY) {_diag.error("foreach() expects an array", current_file(), stmt->line); return {};}
 
             const auto& arr = std::get<std::vector<Value>>(iterable.data);
             Value result;
@@ -409,7 +409,7 @@ Value Evaluator::eval_statement(Statement* stmt)
             }
 
             auto* var = dynamic_cast<VariableExpr*>(target_expr);
-            if(!var) {std::cerr << "[ERROR] Indexed assignment target must be variable\n"; return {};}
+            if(!var) {_diag.error("Indexed assignment target must be variable", current_file(), stmt->line); return {};}
 
             Value container = _env.get(var->name);
             Value new_val = eval_expression(ia->value.get());
@@ -425,7 +425,7 @@ Value Evaluator::eval_statement(Statement* stmt)
                 {
                     int i = (idx_val.type == ValueType::INTEGER) ? std::get<int>(idx_val.data) : static_cast<int>(std::get<double>(idx_val.data));
                     auto& arr = std::get<std::vector<Value>>(cur->data);
-                    if(i < 0)                             {std::cerr << "[ERROR] Negative array index\n"; return {};}
+                    if(i < 0)                             {_diag.error("Negative array index", current_file(), stmt->line); return {};}
                     if(i >= static_cast<int>(arr.size())) {arr.resize(i + 1, Value());}
                     if(last)                              {arr[i] = new_val;}
                     else                                  {cur = &arr[i];}
@@ -446,7 +446,7 @@ Value Evaluator::eval_statement(Statement* stmt)
                         else {cur = &it->second;}
                     }
                 }
-                else {std::cerr << "[ERROR] Indexed assignment not supported for this type\n"; return {};}
+                else {_diag.error("Indexed assignment not supported for this type", current_file(), stmt->line); return {};}
             }
 
             _env.assign(var->name, container);
@@ -463,6 +463,6 @@ Value Evaluator::eval_statement(Statement* stmt)
             return {};
         }
 
-        default: std::cerr << "[WARN] Statement type not yet implemented\n"; return {};
+        default: _diag.warn("Statement type not yet implemented", current_file(), stmt->line); return {};
     }
 }

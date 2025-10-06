@@ -10,6 +10,7 @@
 #include "Statement.h"
 #include "../value/Value.h"
 #include "../environment/Environment.h"
+#include "../diagnostics/Diagnostics.h"
 #include <unordered_map>
 #include <string>
 #include <stack>
@@ -26,7 +27,7 @@ class FunctionIndex;
 class Evaluator
 {
     public:
-        Evaluator(Environment& env, FunctionIndex& index, std::string current_file);
+        Evaluator(Environment& env, FunctionIndex& index, std::string current_file, Diagnostics& _diag);
 
         Value eval_expression(Expression* expr);
         Value eval_statement(Statement* stmt);
@@ -34,7 +35,7 @@ class Evaluator
     private:
         Environment& _env;
         FunctionIndex& _index;
-
+        Diagnostics& _diag;
         std::vector<std::string> _file_stack;
         [[nodiscard]] const std::string& current_file() const {return _file_stack.back();}
 };

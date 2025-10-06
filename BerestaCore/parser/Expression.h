@@ -7,7 +7,6 @@
 
 #pragma once
 #include "../value/Value.h"
-#include "Statement.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -32,7 +31,10 @@ enum class ExpressionType
 struct Expression
 {
     ExpressionType type;
-    explicit Expression(ExpressionType type) : type(type) {}
+    int line;
+    int column;
+
+    explicit Expression(ExpressionType type, int line = -1, int column = -1);
     virtual ~Expression() = default;
 };
 
@@ -40,8 +42,8 @@ struct NumberExpr : public Expression
 {
     Value value;
 
-    explicit NumberExpr(int number) : Expression(ExpressionType::NUMBER), value(number) {}
-    explicit NumberExpr(double number) : Expression(ExpressionType::NUMBER), value(number) {}
+    explicit NumberExpr(int number, int line = -1, int column = -1);
+    explicit NumberExpr(double number, int line = -1, int column = -1);
 };
 
 struct BinaryExpr : public Expression
@@ -50,15 +52,14 @@ struct BinaryExpr : public Expression
     std::unique_ptr<Expression> left;
     std::unique_ptr<Expression> right;
 
-    BinaryExpr(std::string op, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right)
-        : Expression(ExpressionType::BINARY), op(std::move(op)), left(std::move(left)), right(std::move(right)) {}
+    BinaryExpr(std::string op, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right, int line = -1, int column = -1);
 };
 
 struct VariableExpr : public Expression
 {
     std::string name;
 
-    explicit VariableExpr(std::string name) : Expression(ExpressionType::VARIABLE), name(std::move(name)) {}
+    explicit VariableExpr(std::string name, int line = -1, int column = -1);
 };
 
 struct UnaryExpr : public Expression
@@ -66,21 +67,21 @@ struct UnaryExpr : public Expression
     char op;
     std::unique_ptr<Expression> right;
 
-    UnaryExpr(char op, std::unique_ptr<Expression> right): Expression(ExpressionType::UNARY), op(op), right(std::move(right)) {}
+    UnaryExpr(char op, std::unique_ptr<Expression> right, int line = -1, int column = -1);
 };
 
 struct StringExpr : public Expression
 {
     std::string value;
 
-    explicit StringExpr(std::string val) : Expression(ExpressionType::STRING), value(std::move(val)) {}
+    explicit StringExpr(std::string val, int line = -1, int column = -1);
 };
 
 struct BoolExpr : public Expression
 {
     bool value;
 
-    explicit BoolExpr(bool v) : Expression(ExpressionType::BOOLEAN), value(v) {}
+    explicit BoolExpr(bool v, int line = -1, int column = -1);
 };
 
 struct FunctionCallExpr : public Expression
@@ -88,15 +89,14 @@ struct FunctionCallExpr : public Expression
     std::unique_ptr<Expression> callee;
     std::vector<std::unique_ptr<Expression>> arguments;
 
-    FunctionCallExpr(std::unique_ptr<Expression> expr, std::vector<std::unique_ptr<Expression>> args)
-        : Expression(ExpressionType::FUNCTION_CALL), callee(std::move(expr)), arguments(std::move(args)) {}
+    FunctionCallExpr(std::unique_ptr<Expression> expr, std::vector<std::unique_ptr<Expression>> args, int line = -1, int column = -1);
 };
 
 struct ArrayLiteralExpr : public Expression
 {
     std::vector<std::unique_ptr<Expression>> elements;
 
-    explicit ArrayLiteralExpr(std::vector<std::unique_ptr<Expression>> elems) : Expression(ExpressionType::ARRAY_LITERAL), elements(std::move(elems)) {}
+    explicit ArrayLiteralExpr(std::vector<std::unique_ptr<Expression>> elems, int line = -1, int column = -1);
 };
 
 struct IndexExpr : public Expression
@@ -104,7 +104,7 @@ struct IndexExpr : public Expression
     std::unique_ptr<Expression> array;
     std::unique_ptr<Expression> index;
 
-    IndexExpr(std::unique_ptr<Expression> arr, std::unique_ptr<Expression> idx) : Expression(ExpressionType::INDEX), array(std::move(arr)), index(std::move(idx)) {}
+    IndexExpr(std::unique_ptr<Expression> arr, std::unique_ptr<Expression> idx, int line = -1, int column = -1);
 };
 
 struct MemberAccessExpr : public Expression
@@ -112,15 +112,14 @@ struct MemberAccessExpr : public Expression
     std::unique_ptr<Expression> object;
     std::string member;
 
-    MemberAccessExpr(std::unique_ptr<Expression> obj, std::string mem) : Expression(ExpressionType::MEMBER_ACCESS), object(std::move(obj)), member(std::move(mem)) {}
+    MemberAccessExpr(std::unique_ptr<Expression> obj, std::string mem, int line = -1, int column = -1);
 };
 
 struct DictionaryLiteralExpr : public Expression
 {
     std::vector<std::pair<std::unique_ptr<Expression>, std::unique_ptr<Expression>>> entries;
 
-    explicit DictionaryLiteralExpr(std::vector<std::pair<std::unique_ptr<Expression>, std::unique_ptr<Expression>>> entr)
-        : Expression(ExpressionType::DICTIONARY_LITERAL), entries(std::move(entr)) {}
+    explicit DictionaryLiteralExpr(std::vector<std::pair<std::unique_ptr<Expression>, std::unique_ptr<Expression>>> entr, int line = -1, int column = -1);
 };
 
 #endif //BERESTALANGUAGE_EXPRESSION_H

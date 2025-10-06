@@ -10,6 +10,7 @@
 #include "../parser/Evaluator.h"
 #include "../environment/Environment.h"
 #include "../interpreter/FunctionIndex.h"
+#include "../diagnostics/Diagnostics.h"
 #include <unordered_map>
 #include <string>
 #include <vector>
@@ -34,6 +35,7 @@ class Interpreter
 
         Environment _env;
         FunctionIndex _functions;
+        Diagnostics _diag;
         std::unordered_map<std::string, FileUnit> _files;
 };
 

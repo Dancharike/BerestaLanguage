@@ -5,38 +5,44 @@
 #include "Statement.h"
 #include "Expression.h"
 
-Assignment::Assignment(bool is_let, std::string name, std::unique_ptr<Expression> value)
-    : Statement(StatementType::ASSIGNMENT), is_let(is_let), name(std::move(name)), value(std::move(value)) {}
+Statement::Statement(StatementType type, int line, int column)
+    : type(type), line(line), column(column) {}
 
-AssignmentStatement::AssignmentStatement(std::unique_ptr<Assignment> assign)
-    : Statement(StatementType::ASSIGNMENT_STATEMENT), assignment(std::move(assign)) {}
+Assignment::Assignment(bool is_let, std::string name, std::unique_ptr<Expression> value, int line, int column)
+    : Statement(StatementType::ASSIGNMENT, line, column), is_let(is_let), name(std::move(name)), value(std::move(value)) {}
 
-ExpressionStatement::ExpressionStatement(std::unique_ptr<Expression> expr)
-    : Statement(StatementType::EXPRESSION), expression(std::move(expr)) {}
+AssignmentStatement::AssignmentStatement(std::unique_ptr<Assignment> assign, int line, int column)
+    : Statement(StatementType::ASSIGNMENT_STATEMENT, line, column), assignment(std::move(assign)) {}
 
-IfStatement::IfStatement(std::unique_ptr<Expression> cond, std::unique_ptr<Statement> then_b, std::unique_ptr<Statement> else_b)
-    : Statement(StatementType::IF), condition(std::move(cond)), then_branch(std::move(then_b)), else_branch(std::move(else_b)) {}
+ExpressionStatement::ExpressionStatement(std::unique_ptr<Expression> expr, int line, int column)
+    : Statement(StatementType::EXPRESSION, line, column), expression(std::move(expr)) {}
 
-WhileStatement::WhileStatement(std::unique_ptr<Expression> cond, std::unique_ptr<Statement> body)
-    : Statement(StatementType::WHILE), condition(std::move(cond)), body(std::move(body)) {}
+IfStatement::IfStatement(std::unique_ptr<Expression> cond, std::unique_ptr<Statement> then_b, std::unique_ptr<Statement> else_b, int line, int column)
+    : Statement(StatementType::IF, line, column), condition(std::move(cond)), then_branch(std::move(then_b)), else_branch(std::move(else_b)) {}
 
-RepeatStatement::RepeatStatement(std::unique_ptr<Expression> count, std::unique_ptr<Statement> body)
-    : Statement(StatementType::REPEAT), count(std::move(count)), body(std::move(body)) {}
+WhileStatement::WhileStatement(std::unique_ptr<Expression> cond, std::unique_ptr<Statement> body, int line, int column)
+    : Statement(StatementType::WHILE, line, column), condition(std::move(cond)), body(std::move(body)) {}
 
-ForStatement::ForStatement(std::unique_ptr<Statement> init, std::unique_ptr<Expression> cond,std::unique_ptr<Statement> inc, std::unique_ptr<Statement> body)
-    : Statement(StatementType::FOR), initializer(std::move(init)), condition(std::move(cond)), increment(std::move(inc)), body(std::move(body)) {}
+RepeatStatement::RepeatStatement(std::unique_ptr<Expression> count, std::unique_ptr<Statement> body, int line, int column)
+    : Statement(StatementType::REPEAT, line, column), count(std::move(count)), body(std::move(body)) {}
 
-ForeachStatement::ForeachStatement(std::string var, std::unique_ptr<Expression> iter, std::unique_ptr<Statement> body)
-    : Statement(StatementType::FOREACH), var_name(std::move(var)), iterable(std::move(iter)), body(std::move(body)) {}
+ForStatement::ForStatement(std::unique_ptr<Statement> init, std::unique_ptr<Expression> cond,std::unique_ptr<Statement> inc, std::unique_ptr<Statement> body, int line, int column)
+    : Statement(StatementType::FOR, line, column), initializer(std::move(init)), condition(std::move(cond)), increment(std::move(inc)), body(std::move(body)) {}
 
-FunctionStatement::FunctionStatement(FunctionVisibility vis,std::string name, std::vector<std::string> params,std::unique_ptr<Statement> body)
-    : Statement(StatementType::FUNCTION), visibility(vis), name(std::move(name)), parameters(std::move(params)), body(std::move(body)) {}
+ForeachStatement::ForeachStatement(std::string var, std::unique_ptr<Expression> iter, std::unique_ptr<Statement> body, int line, int column)
+    : Statement(StatementType::FOREACH, line, column), var_name(std::move(var)), iterable(std::move(iter)), body(std::move(body)) {}
 
-ReturnStatement::ReturnStatement(std::unique_ptr<Expression> val)
-    : Statement(StatementType::RETURN), value(std::move(val)) {}
+FunctionStatement::FunctionStatement(FunctionVisibility vis,std::string name, std::vector<std::string> params,std::unique_ptr<Statement> body, int line, int column)
+    : Statement(StatementType::FUNCTION, line, column), visibility(vis), name(std::move(name)), parameters(std::move(params)), body(std::move(body)) {}
 
-IndexAssignment::IndexAssignment(std::unique_ptr<Expression> t, std::unique_ptr<Expression> v)
-    : Statement(StatementType::INDEX_ASSIGNMENT), target(std::move(t)), value(std::move(v)) {}
+BlockStatement::BlockStatement(std::vector<std::unique_ptr<Statement>> stmt, int line, int column)
+    : Statement(StatementType::BLOCK, line, column), statements(std::move(stmt)) {}
 
-EnumStatement::EnumStatement(std::string n, std::unordered_map<std::string, int> m)
-    : Statement(StatementType::ENUM), name(std::move(n)), members(std::move(m)) {}
+ReturnStatement::ReturnStatement(std::unique_ptr<Expression> val, int line, int column)
+    : Statement(StatementType::RETURN, line, column), value(std::move(val)) {}
+
+IndexAssignment::IndexAssignment(std::unique_ptr<Expression> t, std::unique_ptr<Expression> v, int line, int column)
+    : Statement(StatementType::INDEX_ASSIGNMENT, line, column), target(std::move(t)), value(std::move(v)) {}
+
+EnumStatement::EnumStatement(std::string n, std::unordered_map<std::string, int> m, int line, int column)
+    : Statement(StatementType::ENUM, line, column), name(std::move(n)), members(std::move(m)) {}

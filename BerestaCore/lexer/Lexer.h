@@ -19,12 +19,14 @@ class Lexer
     private:
         std::string source;
         size_t position;
+        int line;
+        int column;
 
         char peek() const;
         char advance();
         void skip_whitespace();
         Token next_token();
-        Token read_string(size_t start_pos);
+        Token read_string(size_t start_pos, int start_line, int start_column);
 };
 
 
