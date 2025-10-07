@@ -4,9 +4,12 @@
 
 #include "ExpressionParser.h"
 #include "Statement.h"
-#include "Parser.h"
 
-ExpressionParser::ExpressionParser(const std::vector<Token> &tokens, size_t &position) : tokens(tokens), position(position) {}
+ExpressionParser::ExpressionParser(const std::vector<Token> &tokens, size_t &position, Environment& env, FunctionIndex& index, std::string current_file, Diagnostics& diag)
+    : BaseContext(diag, std::move(current_file)), _env(env), _index(index), tokens(tokens), position(position)
+    {
+        _file_stack.push_back(_current_file);
+    }
 
 Token ExpressionParser::peek() const
 {
@@ -119,7 +122,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
     {
         Token left_paren = tokens[position - 1];
         auto expr = parse_expression();
-        if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Expected ')' after expression.\n"; return nullptr;}
+        if(!match(TokenType::RIGHT_PAREN)) {_diag.error("Expected ')' after expression", current_file(), left_paren.line); return nullptr;}
         return expr;
     }
 
@@ -135,7 +138,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
             } while(match(TokenType::COMMA));
         }
 
-        if(!match(TokenType::RIGHT_BRACKET)) {std::cerr << "Expected ']' after array literal\n"; return nullptr;}
+        if(!match(TokenType::RIGHT_BRACKET)) {_diag.error("Expected ']' after array literal", current_file(), lb.line); return nullptr;}
         return std::make_unique<ArrayLiteralExpr>(std::move(elems), lb.line, lb.column);
     }
 
@@ -148,21 +151,21 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
         {
             do
             {
-                if(peek().type != TokenType::STRING) {std::cerr << "[ERROR] Dictionary keys must be string literals\n"; return nullptr;}
+                if(peek().type != TokenType::STRING) {_diag.error("Dictionary keys must be string literals", current_file(), lb.line); return nullptr;}
                 auto key = parse_expression();
 
-                if(!match(TokenType::COLON)) {std::cerr << "Expected ':' in dictionary literal\n"; return nullptr;}
+                if(!match(TokenType::COLON)) {_diag.error("Expected ':' in dictionary literal", current_file(), lb.line); return nullptr;}
 
                 auto value = parse_expression();
                 entries.emplace_back(std::move(key), std::move(value));
             } while(match(TokenType::COMMA));
         }
 
-        if(!match(TokenType::RIGHT_BRACE)) {std::cerr << "Expected '}' after dictionary literal\n"; return nullptr;}
+        if(!match(TokenType::RIGHT_BRACE)) {_diag.error("Expected '}' after dictionary literal", current_file(), lb.line); return nullptr;}
         return std::make_unique<DictionaryLiteralExpr>(std::move(entries), lb.line, lb.column);
     }
 
-    std::cerr << "Unexpected token: " << peek().value << "\n";
+    _diag.error("Unexpected token: " + peek().value, current_file(), peek().line);
     return nullptr;
 }
 
@@ -174,7 +177,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_postfix(std::unique_ptr<Expr
         {
             Token lb = tokens[position - 1];
             auto index = parse_expression();
-            if(!match(TokenType::RIGHT_BRACKET)) {std::cerr << "Expected ']' after index expression\n"; return nullptr;}
+            if(!match(TokenType::RIGHT_BRACKET)) {_diag.error("Expected ']' after index expression", current_file(), lb.line); return nullptr;}
             expr = std::make_unique<IndexExpr>(std::move(expr), std::move(index), lb.line, lb.column);
             continue;
         }
@@ -188,7 +191,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_postfix(std::unique_ptr<Expr
                 do {args.push_back(parse_expression());} while(match(TokenType::COMMA));
             }
 
-            if(!match(TokenType::RIGHT_PAREN)) {std::cerr << "Unexpected token: " << peek().value << "\n"; return nullptr;}
+            if(!match(TokenType::RIGHT_PAREN)) {_diag.error("Expected ')' after function arguments", current_file(), lp.line); return nullptr;}
             expr = std::make_unique<FunctionCallExpr>(std::move(expr), std::move(args), lp.line, lp.column);
             continue;
         }
@@ -196,7 +199,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_postfix(std::unique_ptr<Expr
         if(match(TokenType::DOT))
         {
             Token dot = tokens[position - 1];
-            if(peek().type != TokenType::IDENTIFIER) {std::cerr << "[ERROR] Expected identifier after '.'\n"; return nullptr;}
+            if(peek().type != TokenType::IDENTIFIER) {_diag.error("Expected identifier after '.'", current_file(), dot.line); return nullptr;}
             std::string member = advance().value;
             expr = std::make_unique<MemberAccessExpr>(std::move(expr), std::move(member), dot.line, dot.column);
             continue;

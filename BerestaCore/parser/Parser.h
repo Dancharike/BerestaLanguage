@@ -7,14 +7,18 @@
 
 #pragma once
 #include "../token/Token.h"
+#include "../diagnostics/Diagnostics.h"
+#include "../diagnostics/BaseContext.h"
+#include "../environment/Environment.h"
+#include "../interpreter/FunctionIndex.h"
 #include "Statement.h"
 #include <vector>
 #include <memory>
 
-class Parser
+class Parser : public BaseContext
 {
     public:
-        explicit Parser(const std::vector<Token>& tokens);
+        explicit Parser(const std::vector<Token>& tokens, Environment& env, FunctionIndex& index, std::string current_file, Diagnostics& diag);
         std::vector<std::unique_ptr<Statement>> parse();
         std::unique_ptr<Statement> parse_statement();
         std::unique_ptr<Assignment> parse_assignment();
@@ -40,6 +44,10 @@ class Parser
 
         const std::vector<Token>& tokens;
         size_t position = 0;
+
+        Environment& _env;
+        FunctionIndex& _index;
+        std::vector<std::string> _file_stack;
 };
 
 

@@ -5,16 +5,15 @@
 #include "Interpreter.h"
 #include "lexer/Lexer.h"
 #include "parser/Parser.h"
-#include <iostream>
 
-Interpreter::Interpreter() = default;
+Interpreter::Interpreter(Environment& env, FunctionIndex& index, Diagnostics& diag) : BaseContext(diag), _env(env), _index(index) {}
 
 void Interpreter::register_file(const std::string& filename, const std::string& code)
 {
     Lexer lexer(code);
     auto tokens = lexer.tokenize();
 
-    Parser parser(tokens);
+    Parser parser(tokens, _env, _index, filename, _diag);
     auto statements = parser.parse();
 
     FileUnit unit;
@@ -26,13 +25,15 @@ void Interpreter::register_file(const std::string& filename, const std::string& 
 
 void Interpreter::index_functions(const std::string& filename, const std::vector<std::unique_ptr<Statement>>& statements)
 {
-    _functions.reindex_file(filename, statements);
+    _index.reindex_file(filename, statements);
 }
 
 void Interpreter::execute_file(const std::string& filename)
 {
+    set_current_file(filename);
+
     auto it = _files.find(filename);
-    if(it == _files.end()) {std::cerr << "[ERROR] File not registered: " << filename << "\n"; return;}
+    if(it == _files.end()) {_diag.error("File not registered: " + filename, current_file()); return;}
 
     interpret(it->second.ast, filename);
 
@@ -44,7 +45,7 @@ void Interpreter::execute_file(const std::string& filename)
 
 Value Interpreter::interpret(const std::vector<std::unique_ptr<Statement>>& statements, const std::string& current_file)
 {
-    Evaluator evaluator(_env, _functions, current_file, _diag);
+    Evaluator evaluator(_env, _index, current_file, _diag);
 
     Value last_value;
     for(const auto& stmt : statements)

@@ -10,10 +10,11 @@
 #include <iostream>
 #include <unordered_map>
 
-Evaluator::Evaluator(Environment &env, FunctionIndex &index, std::string current_file, Diagnostics& diagnostics) : _env(env), _index(index), _diag(diagnostics)
-{
-    _file_stack.push_back(std::move(current_file));
-}
+Evaluator::Evaluator(Environment &env, FunctionIndex &index, std::string current_file, Diagnostics& diagnostics)
+    : BaseContext(diagnostics, std::move(current_file)), _env(env), _index(index)
+    {
+        _file_stack.push_back(std::move(current_file));
+    }
 
 Value Evaluator::eval_expression(Expression* expr)
 {
@@ -144,6 +145,7 @@ Value Evaluator::eval_expression(Expression* expr)
             bool pushed_file = false;
             if(ref->is_public && ref->file != current_file())
             {
+                set_current_file(ref->file);
                 _file_stack.push_back(ref->file);
                 pushed_file = true;
             }
@@ -155,17 +157,17 @@ Value Evaluator::eval_expression(Expression* expr)
             }
 
             Value result;
-            try
-            {
-                result = eval_statement(fn->body.get());
-            }
-            catch(const ReturnException& e)
-            {
-                result = e.value;
-            }
+
+            try {result = eval_statement(fn->body.get());}
+            catch(const ReturnException& e) {result = e.value;}
 
             _env.pop_scope();
-            if(pushed_file) {_file_stack.pop_back();}
+            if(pushed_file)
+            {
+                _file_stack.pop_back();
+                if(!_file_stack.empty()) {set_current_file(_file_stack.back());}
+            }
+
             return result;
         }
 
@@ -222,7 +224,7 @@ Value Evaluator::eval_expression(Expression* expr)
 
                 const auto &dict = *std::get<DictionaryPtr>(container.data);
                 auto it = dict.find(key);
-                if(it == dict.end()) {std::cerr << "[ERROR] Key not found in dictionary: " << key << "\n"; return {};}
+                if(it == dict.end()) {_diag.error("Key not found in dictionary: " + key, current_file(), expr->line); return {};}
                 return it->second;
             }
         }

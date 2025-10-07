@@ -11,6 +11,7 @@
 #include "../value/Value.h"
 #include "../environment/Environment.h"
 #include "../diagnostics/Diagnostics.h"
+#include "../diagnostics/BaseContext.h"
 #include <unordered_map>
 #include <string>
 #include <stack>
@@ -24,7 +25,7 @@ struct ReturnException
 
 class FunctionIndex;
 
-class Evaluator
+class Evaluator : public BaseContext
 {
     public:
         Evaluator(Environment& env, FunctionIndex& index, std::string current_file, Diagnostics& _diag);
@@ -35,9 +36,7 @@ class Evaluator
     private:
         Environment& _env;
         FunctionIndex& _index;
-        Diagnostics& _diag;
         std::vector<std::string> _file_stack;
-        [[nodiscard]] const std::string& current_file() const {return _file_stack.back();}
 };
 
 

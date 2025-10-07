@@ -24,7 +24,10 @@ int main(int argc, char* argv[])
 
     std::filesystem::path root_dir = entry_path.parent_path();
 
-    Interpreter interpreter;
+    Diagnostics diag;
+    Environment env;
+    FunctionIndex index;
+    Interpreter interpreter(env, index, diag);
 
     for(const auto& p : std::filesystem::directory_iterator(root_dir))
     {

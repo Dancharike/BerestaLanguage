@@ -7,14 +7,18 @@
 
 #pragma once
 #include "../token/Token.h"
+#include "../diagnostics/Diagnostics.h"
+#include "../diagnostics/BaseContext.h"
+#include "../environment/Environment.h"
+#include "../interpreter/FunctionIndex.h"
 #include "Expression.h"
 #include <vector>
 #include <memory>
 
-class ExpressionParser
+class ExpressionParser : public BaseContext
 {
     public:
-        explicit ExpressionParser(const std::vector<Token>& tokens, size_t& position);
+        explicit ExpressionParser(const std::vector<Token>& tokens, size_t& position, Environment& env, FunctionIndex& index, std::string current_file, Diagnostics& diag);
         std::unique_ptr<Expression> parse_expression();
         size_t& get_position() {return position;}
 
@@ -31,6 +35,10 @@ class ExpressionParser
         Token advance();
         [[nodiscard]] Token peek() const;
         bool match(TokenType type);
+
+        Environment& _env;
+        FunctionIndex& _index;
+        std::vector<std::string> _file_stack;
 };
 
 

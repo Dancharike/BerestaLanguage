@@ -49,5 +49,5 @@ console_print(x);
 console_print("Check for existing dictionary copy:");
 console_print(copy);
 
-console_print("test");
+console_print("test")
 unknown_function();

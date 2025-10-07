@@ -11,6 +11,7 @@
 #include "../environment/Environment.h"
 #include "../interpreter/FunctionIndex.h"
 #include "../diagnostics/Diagnostics.h"
+#include "../diagnostics/BaseContext.h"
 #include <unordered_map>
 #include <string>
 #include <vector>
@@ -20,10 +21,10 @@ struct FileUnit
     std::vector<std::unique_ptr<Statement>> ast;
 };
 
-class Interpreter
+class Interpreter : public BaseContext
 {
     public:
-        Interpreter();
+        Interpreter(Environment& env, FunctionIndex& index, Diagnostics& diag);
 
         void register_file(const std::string& filename, const std::string& code);
         void execute_file(const std::string& filename);
@@ -34,8 +35,7 @@ class Interpreter
         Value interpret(const std::vector<std::unique_ptr<Statement>>& statements, const std::string& current_file);
 
         Environment _env;
-        FunctionIndex _functions;
-        Diagnostics _diag;
+        FunctionIndex _index;
         std::unordered_map<std::string, FileUnit> _files;
 };
 
