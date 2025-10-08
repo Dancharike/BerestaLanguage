@@ -28,6 +28,8 @@ enum class ExpressionType
     MEMBER_ACCESS
 };
 
+struct ExprVisitor;
+
 struct Expression
 {
     ExpressionType type;
@@ -36,6 +38,8 @@ struct Expression
 
     explicit Expression(ExpressionType type, int line = -1, int column = -1);
     virtual ~Expression() = default;
+
+    virtual Value accept(ExprVisitor& val) = 0;
 };
 
 struct NumberExpr : public Expression
@@ -44,6 +48,7 @@ struct NumberExpr : public Expression
 
     explicit NumberExpr(int number, int line = -1, int column = -1);
     explicit NumberExpr(double number, int line = -1, int column = -1);
+    Value accept(ExprVisitor& val) override;
 };
 
 struct BinaryExpr : public Expression
@@ -53,6 +58,7 @@ struct BinaryExpr : public Expression
     std::unique_ptr<Expression> right;
 
     BinaryExpr(std::string op, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right, int line = -1, int column = -1);
+    Value accept(ExprVisitor& val) override;
 };
 
 struct VariableExpr : public Expression
@@ -60,6 +66,7 @@ struct VariableExpr : public Expression
     std::string name;
 
     explicit VariableExpr(std::string name, int line = -1, int column = -1);
+    Value accept(ExprVisitor& val) override;
 };
 
 struct UnaryExpr : public Expression
@@ -68,6 +75,7 @@ struct UnaryExpr : public Expression
     std::unique_ptr<Expression> right;
 
     UnaryExpr(char op, std::unique_ptr<Expression> right, int line = -1, int column = -1);
+    Value accept(ExprVisitor& val) override;
 };
 
 struct StringExpr : public Expression
@@ -75,6 +83,7 @@ struct StringExpr : public Expression
     std::string value;
 
     explicit StringExpr(std::string val, int line = -1, int column = -1);
+    Value accept(ExprVisitor& val) override;
 };
 
 struct BoolExpr : public Expression
@@ -82,6 +91,7 @@ struct BoolExpr : public Expression
     bool value;
 
     explicit BoolExpr(bool v, int line = -1, int column = -1);
+    Value accept(ExprVisitor& val) override;
 };
 
 struct FunctionCallExpr : public Expression
@@ -90,6 +100,7 @@ struct FunctionCallExpr : public Expression
     std::vector<std::unique_ptr<Expression>> arguments;
 
     FunctionCallExpr(std::unique_ptr<Expression> expr, std::vector<std::unique_ptr<Expression>> args, int line = -1, int column = -1);
+    Value accept(ExprVisitor& val) override;
 };
 
 struct ArrayLiteralExpr : public Expression
@@ -97,6 +108,7 @@ struct ArrayLiteralExpr : public Expression
     std::vector<std::unique_ptr<Expression>> elements;
 
     explicit ArrayLiteralExpr(std::vector<std::unique_ptr<Expression>> elems, int line = -1, int column = -1);
+    Value accept(ExprVisitor& val) override;
 };
 
 struct IndexExpr : public Expression
@@ -105,6 +117,7 @@ struct IndexExpr : public Expression
     std::unique_ptr<Expression> index;
 
     IndexExpr(std::unique_ptr<Expression> arr, std::unique_ptr<Expression> idx, int line = -1, int column = -1);
+    Value accept(ExprVisitor& val) override;
 };
 
 struct MemberAccessExpr : public Expression
@@ -113,6 +126,7 @@ struct MemberAccessExpr : public Expression
     std::string member;
 
     MemberAccessExpr(std::unique_ptr<Expression> obj, std::string mem, int line = -1, int column = -1);
+    Value accept(ExprVisitor& val) override;
 };
 
 struct DictionaryLiteralExpr : public Expression
@@ -120,6 +134,7 @@ struct DictionaryLiteralExpr : public Expression
     std::vector<std::pair<std::unique_ptr<Expression>, std::unique_ptr<Expression>>> entries;
 
     explicit DictionaryLiteralExpr(std::vector<std::pair<std::unique_ptr<Expression>, std::unique_ptr<Expression>>> entr, int line = -1, int column = -1);
+    Value accept(ExprVisitor& val) override;
 };
 
 #endif //BERESTALANGUAGE_EXPRESSION_H

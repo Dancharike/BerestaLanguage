@@ -3,6 +3,7 @@
 //
 
 #include "Expression.h"
+#include "Visitors.h"
 
 Expression::Expression(ExpressionType type, int line, int column)
     : type(type), line(line), column(column) {}
@@ -42,3 +43,16 @@ MemberAccessExpr::MemberAccessExpr(std::unique_ptr<Expression> obj, std::string 
 
 DictionaryLiteralExpr::DictionaryLiteralExpr(std::vector<std::pair<std::unique_ptr<Expression>, std::unique_ptr<Expression>>> entr, int line, int column)
     : Expression(ExpressionType::DICTIONARY_LITERAL, line, column), entries(std::move(entr)) {}
+
+
+Value NumberExpr::accept(ExprVisitor& val)            {return val.visit_number(*this);}
+Value StringExpr::accept(ExprVisitor& val)            {return val.visit_string(*this);}
+Value BoolExpr::accept(ExprVisitor& val)              {return val.visit_bool(*this);}
+Value VariableExpr::accept(ExprVisitor& val)          {return val.visit_variable(*this);}
+Value UnaryExpr::accept(ExprVisitor& val)             {return val.visit_unary(*this);}
+Value BinaryExpr::accept(ExprVisitor& val)            {return val.visit_binary(*this);}
+Value FunctionCallExpr::accept(ExprVisitor& val)      {return val.visit_call(*this);}
+Value ArrayLiteralExpr::accept(ExprVisitor& val)      {return val.visit_array(*this);}
+Value DictionaryLiteralExpr::accept(ExprVisitor& val) {return val.visit_dictionary(*this);}
+Value IndexExpr::accept(ExprVisitor& val)             {return val.visit_index(*this);}
+Value MemberAccessExpr::accept(ExprVisitor& val)      {return val.visit_member(*this);}

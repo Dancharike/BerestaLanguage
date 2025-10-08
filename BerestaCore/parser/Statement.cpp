@@ -4,6 +4,7 @@
 
 #include "Statement.h"
 #include "Expression.h"
+#include "Visitors.h"
 
 Statement::Statement(StatementType type, int line, int column)
     : type(type), line(line), column(column) {}
@@ -46,3 +47,18 @@ IndexAssignment::IndexAssignment(std::unique_ptr<Expression> t, std::unique_ptr<
 
 EnumStatement::EnumStatement(std::string n, std::unordered_map<std::string, int> m, int line, int column)
     : Statement(StatementType::ENUM, line, column), name(std::move(n)), members(std::move(m)) {}
+
+
+Value Assignment::accept(StmtVisitor& val)          {return val.visit_assignment(*this);}
+Value AssignmentStatement::accept(StmtVisitor& val) {return val.visit_assignment_statement(*this);}
+Value ExpressionStatement::accept(StmtVisitor& val) {return val.visit_expr_stmt(*this);}
+Value IfStatement::accept(StmtVisitor& val)         {return val.visit_if(*this);}
+Value WhileStatement::accept(StmtVisitor& val)      {return val.visit_while(*this);}
+Value RepeatStatement::accept(StmtVisitor& val)     {return val.visit_repeat(*this);}
+Value ForStatement::accept(StmtVisitor& val)        {return val.visit_for(*this);}
+Value ForeachStatement::accept(StmtVisitor& val)    {return val.visit_foreach(*this);}
+Value BlockStatement::accept(StmtVisitor& val)      {return val.visit_block(*this);}
+Value FunctionStatement::accept(StmtVisitor& val)   {return val.visit_function(*this);}
+Value ReturnStatement::accept(StmtVisitor& val)     {return val.visit_return(*this);}
+Value IndexAssignment::accept(StmtVisitor& val)     {return val.visit_index_assignment(*this);}
+Value EnumStatement::accept(StmtVisitor& val)       {return val.visit_enum(*this);}

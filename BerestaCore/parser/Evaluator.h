@@ -6,6 +6,7 @@
 #define BERESTALANGUAGE_EVALUATOR_H
 
 #pragma once
+#include "Visitors.h"
 #include "Expression.h"
 #include "Statement.h"
 #include "../value/Value.h"
@@ -16,16 +17,9 @@
 #include <string>
 #include <stack>
 
-struct ReturnException
-{
-    Value value;
-
-    explicit ReturnException(Value v) : value(std::move(v)) {}
-};
-
 class FunctionIndex;
 
-class Evaluator : public BaseContext
+class Evaluator : public BaseContext, public ExprVisitor, public StmtVisitor
 {
     public:
         Evaluator(Environment& env, FunctionIndex& index, std::string current_file, Diagnostics& _diag);
@@ -37,6 +31,35 @@ class Evaluator : public BaseContext
         Environment& _env;
         FunctionIndex& _index;
         std::vector<std::string> _file_stack;
+
+        [[nodiscard]] static bool is_truthy(const Value& val) ;
+        void type_error(int line, const char* msg);
+
+        Value visit_number(NumberExpr& expr) override;
+        Value visit_string(StringExpr& expr) override;
+        Value visit_bool(BoolExpr& expr) override;
+        Value visit_variable(VariableExpr& expr) override;
+        Value visit_unary(UnaryExpr& expr) override;
+        Value visit_binary(BinaryExpr& expr) override;
+        Value visit_call(FunctionCallExpr& expr) override;
+        Value visit_array(ArrayLiteralExpr& expr) override;
+        Value visit_dictionary(DictionaryLiteralExpr& expr) override;
+        Value visit_index(IndexExpr& expr) override;
+        Value visit_member(MemberAccessExpr& expr) override;
+
+        Value visit_assignment(Assignment& stmt) override;
+        Value visit_assignment_statement(AssignmentStatement& stmt) override;
+        Value visit_expr_stmt(ExpressionStatement& stmt) override;
+        Value visit_if(IfStatement& stmt) override;
+        Value visit_while(WhileStatement& stmt) override;
+        Value visit_repeat(RepeatStatement& stmt) override;
+        Value visit_for(ForStatement& stmt) override;
+        Value visit_foreach(ForeachStatement& stmt) override;
+        Value visit_block(BlockStatement& stmt) override;
+        Value visit_function(FunctionStatement& stmt) override;
+        Value visit_return(ReturnStatement& stmt) override;
+        Value visit_index_assignment(IndexAssignment& stmt) override;
+        Value visit_enum(EnumStatement& stmt) override;
 };
 
 

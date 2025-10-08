@@ -32,6 +32,7 @@ add_library(BerestaCore STATIC
         interpreter/FunctionIndex.h
         diagnostics/Diagnostics.h
         diagnostics/BaseContext.h
+        parser/Visitors.h
 )
 
 target_include_directories(BerestaCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
