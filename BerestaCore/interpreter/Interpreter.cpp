@@ -5,8 +5,12 @@
 #include "Interpreter.h"
 #include "lexer/Lexer.h"
 #include "parser/Parser.h"
+#include "builtin/core/BuiltinRegistry.h"
 
-Interpreter::Interpreter(Environment& env, FunctionIndex& index, Diagnostics& diag) : BaseContext(diag), _env(env), _index(index) {}
+Interpreter::Interpreter(Environment& env, FunctionIndex& index, Diagnostics& diag) : BaseContext(diag), _env(env), _index(index)
+{
+    register_default_builtins();
+}
 
 void Interpreter::register_file(const std::string& filename, const std::string& code)
 {

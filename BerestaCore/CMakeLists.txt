@@ -24,15 +24,31 @@ add_library(BerestaCore STATIC
         parser/Expression.h
         parser/Statement.cpp
         parser/Statement.h
-        builtin/Builtins.cpp
-        builtin/Builtins.h
-        builtin/Matrix2D.cpp
-        builtin/Matrix2D.h
+        builtin/core/Matrix2D.cpp
+        builtin/core/Matrix2D.h
         environment/Environment.h
         interpreter/FunctionIndex.h
         diagnostics/Diagnostics.h
         diagnostics/BaseContext.h
         parser/Visitors.h
+        builtin/core/IBuiltinFunction.h
+        builtin/core/BuiltinRegistry.cpp
+        builtin/core/BuiltinRegistry.h
+        builtin/core/BuiltinUtils.h
+        builtin/functions/print/BuiltinPrint.cpp
+        builtin/functions/print/BuiltinPrint.h
+        builtin/functions/math/BuiltinMathCore.cpp
+        builtin/functions/math/BuiltinMathCore.h
+        builtin/functions/math/BuiltinMathTrig.cpp
+        builtin/functions/math/BuiltinMathTrig.h
+        builtin/functions/random/BuiltinRandom.cpp
+        builtin/functions/random/BuiltinRandom.h
+        builtin/functions/matrix/BuiltinMatrixCore.cpp
+        builtin/functions/matrix/BuiltinMatrixCore.h
+        builtin/functions/array/BuiltinArray.cpp
+        builtin/functions/array/BuiltinArray.h
+        builtin/functions/dictionary/BuiltinDictionary.cpp
+        builtin/functions/dictionary/BuiltinDictionary.h
 )
 
 target_include_directories(BerestaCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

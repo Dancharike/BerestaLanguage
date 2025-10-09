@@ -6,7 +6,7 @@
 #include "Expression.h"
 #include "Statement.h"
 #include "../interpreter/FunctionIndex.h"
-#include "../builtin/Builtins.h"
+#include "builtin/core/BuiltinRegistry.h"
 #include <algorithm>
 #include <iostream>
 #include <unordered_map>
@@ -140,10 +140,11 @@ Value Evaluator::visit_call(FunctionCallExpr& expr)
     args.reserve(expr.arguments.size());
     for(auto& a : expr.arguments) {args.push_back(eval_expression(a.get()));}
 
-    if(auto it = builtin_functions.find(fn_name); it != builtin_functions.end())
+    if(auto* impl = BuiltinRegistry::instance().get(fn_name))
     {
-        try {return it->second(args);}
-        catch(...) {_diag.error("Exception in builtin function", current_file(), expr.line); return {};}
+        try {return impl->invoke(args);}
+        catch(const std::exception& ex) {_diag.error(std::string("Builtin error: ") + ex.what(), current_file(), expr.line); return {};}
+        catch(...)                      {_diag.error("Builtin error: exception", current_file(), expr.line); return {};}
     }
 
     const FunctionRef* ref = _index.find_function(fn_name, current_file());
