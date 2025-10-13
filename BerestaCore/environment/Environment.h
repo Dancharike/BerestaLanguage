@@ -14,7 +14,7 @@
 class Environment
 {
     public:
-        Environment() : _scopes(1) {}
+        explicit Environment(Environment* parent = nullptr) : _parent(parent), _scopes(1) {}
 
         void push_scope() {_scopes.emplace_back();}
         void pop_scope() {if(_scopes.size() > 1) {_scopes.pop_back();}}
@@ -28,6 +28,7 @@ class Environment
                 auto it = _scopes[i].find(name);
                 if(it != _scopes[i].end()) {it->second = v; return true;}
             }
+            if(_parent) {return _parent->assign(name, v);}
             _scopes.front()[name] = v;
             return true;
         }
@@ -39,12 +40,14 @@ class Environment
                 auto it = _scopes[i].find(name);
                 if(it != _scopes[i].end()) {return it->second;}
             }
+            if(_parent) {return _parent->get(name);}
             std::cerr << "[ERROR] Variable not found: " << name << "\n";
             return {};
         }
 
     private:
         std::vector<std::unordered_map<std::string, Value>> _scopes;
+        Environment* _parent;
 };
 
 

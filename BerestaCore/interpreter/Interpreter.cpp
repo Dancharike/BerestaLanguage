@@ -7,7 +7,7 @@
 #include "parser/Parser.h"
 #include "builtin/core/BuiltinRegistry.h"
 
-Interpreter::Interpreter(Environment& env, FunctionIndex& index, Diagnostics& diag) : BaseContext(diag), _env(env), _index(index)
+Interpreter::Interpreter(Environment& env, FunctionIndex& index, Diagnostics& diag) : BaseContext(diag), _env(env), _index(index), _modules(_diag)
 {
     register_default_builtins();
 }
@@ -20,48 +20,52 @@ void Interpreter::register_file(const std::string& filename, const std::string& 
     Parser parser(tokens, _env, _index, filename, _diag);
     auto statements = parser.parse();
 
-    FileUnit unit;
-    unit.ast = std::move(statements);
-    _files[filename] = std::move(unit);
+    Module& module = _modules.register_module(filename, _env, _index);
+    module.set_ast(std::move(statements));
 
-    index_functions(filename, _files[filename].ast);
-}
-
-void Interpreter::index_functions(const std::string& filename, const std::vector<std::unique_ptr<Statement>>& statements)
-{
-    _index.reindex_file(filename, statements);
-}
-
-void Interpreter::execute_file(const std::string& filename)
-{
-    set_current_file(filename);
-
-    auto it = _files.find(filename);
-    if(it == _files.end()) {_diag.error("File not registered: " + filename, current_file()); return;}
-
-    interpret(it->second.ast, filename);
-
-    if(_diag.has_error())
-    {
-        _diag.print_all();
-    }
-}
-
-Value Interpreter::interpret(const std::vector<std::unique_ptr<Statement>>& statements, const std::string& current_file)
-{
-    Evaluator evaluator(_env, _index, current_file, _diag);
-
-    Value last_value;
-    for(const auto& stmt : statements)
-    {
-        if(stmt->type == StatementType::FUNCTION) {continue;}
-        last_value = evaluator.eval_statement(stmt.get());
-    }
-
-    return last_value;
+    _index.reindex_file(filename, module.get_ast());
 }
 
 void Interpreter::run_project(const std::string& entry_file)
 {
-    execute_file(entry_file);
+    Module* entry = _modules.get_module(entry_file);
+    if(!entry) {_diag.error("File not registered: " + entry_file, entry_file); return;}
+
+    auto files = _modules.list_filenames();
+    for(const auto& filename : files)
+    {
+        if(filename == entry_file) {continue;}
+
+        Module* mod = _modules.get_module(filename);
+        if(!mod) {continue;}
+
+        set_current_file(filename);
+
+        Environment& env = mod->environment();
+        env.push_scope();
+
+        Evaluator eval(env, mod->index(), filename, _diag);
+        for(const auto& stmt : mod->get_ast())
+        {
+            if(stmt->type != StatementType::FUNCTION) {eval.eval_statement(stmt.get());}
+        }
+
+        env.pop_scope();
+    }
+
+
+    set_current_file(entry_file);
+
+    Environment& env = entry->environment();
+    env.push_scope();
+
+    Evaluator eval(env, entry->index(), entry_file, _diag);
+    for(const auto& stmt : entry->get_ast())
+    {
+        if(stmt->type != StatementType::FUNCTION) {eval.eval_statement(stmt.get());}
+    }
+
+    env.pop_scope();
+
+    if(_diag.has_error()) {_diag.print_all();}
 }

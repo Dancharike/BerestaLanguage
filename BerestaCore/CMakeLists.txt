@@ -49,6 +49,10 @@ add_library(BerestaCore STATIC
         builtin/functions/array/BuiltinArray.h
         builtin/functions/dictionary/BuiltinDictionary.cpp
         builtin/functions/dictionary/BuiltinDictionary.h
+        module/Module.cpp
+        module/Module.h
+        module/ModuleManager.cpp
+        module/ModuleManager.h
 )
 
 target_include_directories(BerestaCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

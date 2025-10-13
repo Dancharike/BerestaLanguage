@@ -21,3 +21,17 @@ private function secret_mult(a, b)
 {
     return a * b;
 }
+
+pi = 3.14159;
+version = "1.0.0";
+
+private function debug_info()
+{
+    console_print("Debug mode active");
+}
+
+public function get_area(radius)
+{
+    return pi * radius * radius;
+}
+

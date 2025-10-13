@@ -1,2 +1,10 @@
 console_print("test")
 unknown_function();
+
+console_print("Program started. Version: " + version);
+
+let r = 5;
+let area = get_area(r);
+
+console_print("Area of circle: " + area);
+debug_info();
