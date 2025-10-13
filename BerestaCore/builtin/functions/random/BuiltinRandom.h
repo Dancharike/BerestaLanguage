@@ -11,31 +11,31 @@
 struct BuiltinChooseFrom : IBuiltinFunction
 {
     [[nodiscard]] std::string name() const override {return "choose_from";}
-    Value invoke(const std::vector<Value>& args) override;
+    Value invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& filename, int line) override;
 };
 
 struct BuiltinRandom : IBuiltinFunction
 {
     [[nodiscard]] std::string name() const override {return "random";}
-    Value invoke(const std::vector<Value>& args) override;
+    Value invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& filename, int line) override;
 };
 
 struct BuiltinRandomRange : IBuiltinFunction
 {
     [[nodiscard]] std::string name() const override {return "random_range";}
-    Value invoke(const std::vector<Value>& args) override;
+    Value invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& filename, int line) override;
 };
 
 struct BuiltinIntRandom : IBuiltinFunction
 {
     [[nodiscard]] std::string name() const override {return "int_random";}
-    Value invoke(const std::vector<Value>& args) override;
+    Value invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& filename, int line) override;
 };
 
 struct BuiltinIntRandomRange : IBuiltinFunction
 {
     [[nodiscard]] std::string name() const override {return "int_random_range";}
-    Value invoke(const std::vector<Value>& args) override;
+    Value invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& filename, int line) override;
 };
 
 void register_builtin_random();

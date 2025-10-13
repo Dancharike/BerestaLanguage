@@ -9,10 +9,10 @@
 #include <random>
 #include <cmath>
 
-static bool ensure_array_arg(const std::vector<Value>& args, size_t idx, const std::string& name)
+static bool ensure_array_arg(Diagnostics& diag, const std::string& file, int line, const std::vector<Value>& args, size_t idx, const std::string& name)
 {
-    if(idx >= args.size()) {diag_error(name + ": missing argument #" + std::to_string(idx)); return false;}
-    if(args[idx].type != ValueType::ARRAY) {diag_error(name + ": argument #" + std::to_string(idx) + " must be array"); return false;}
+    if(idx >= args.size()) {diag.error(name + ": missing argument #" + std::to_string(idx), file, line); return false;}
+    if(args[idx].type != ValueType::ARRAY) {diag.error(name + ": argument #" + std::to_string(idx) + " must be array", file, line); return false;}
     return true;
 }
 
@@ -60,107 +60,107 @@ static bool value_less(const Value& a, const Value& b)
     return a.type < b.type;
 }
 
-Value BuiltinArrayIsArray::invoke(const std::vector<Value>& args)
+Value BuiltinArrayIsArray::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
     ensure_arity(args, 1, 1);
     return Value(args[0].type == ValueType::ARRAY);
 }
 
-Value BuiltinArrayLength::invoke(const std::vector<Value>& args)
+Value BuiltinArrayLength::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
     ensure_arity(args, 1, 1);
-    if(!ensure_array_arg(args, 0, name())) {return {};}
+    if(!ensure_array_arg(diag, file, line, args, 0, name())) {return {};}
     return Value(static_cast<int>(std::get<std::vector<Value>>(args[0].data).size()));
 }
 
-Value BuiltinArrayGet::invoke(const std::vector<Value>& args)
+Value BuiltinArrayGet::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
     ensure_arity(args, 2, 2);
-    if(!ensure_array_arg(args, 0, name())) {return {};}
+    if(!ensure_array_arg(diag, file, line, args, 0, name())) {return {};}
     size_t i = 0;
-    if(!to_index_nonneg(args[1], i)) {diag_error("array_get: index must be non-negative"); return {};}
+    if(!to_index_nonneg(args[1], i)) {diag.error("array_get: index must be non-negative", file, line); return {};}
     const auto& v = std::get<std::vector<Value>>(args[0].data);
-    if(i >= v.size()) {diag_error("array_get: index out of bounds"); return {};}
+    if(i >= v.size()) {diag.error("array_get: index out of bounds", file, line); return {};}
     return v[i];
 }
 
-Value BuiltinArraySet::invoke(const std::vector<Value>& args)
+Value BuiltinArraySet::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
-    ensure_min_arity(args, 3);
-    if(!ensure_array_arg(args, 0, name())) {return {};}
+    ensure_min_arity(diag, file, line, args, 3);
+    if(!ensure_array_arg(diag, file, line, args, 0, name())) {return {};}
     size_t i = 0;
-    if(!to_index_nonneg(args[1], i)) {diag_error("array_set: index must be non-negative"); return {};}
+    if(!to_index_nonneg(args[1], i)) {diag.error("array_set: index must be non-negative", file, line); return {};}
     auto v = std::get<std::vector<Value>>(args[0].data);
     if(i >= v.size()) {v.resize(i + 1, Value());}
     v[i] = args[2];
     return Value(v);
 }
 
-Value BuiltinArrayPush::invoke(const std::vector<Value>& args)
+Value BuiltinArrayPush::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
-    ensure_min_arity(args, 2);
-    if(!ensure_array_arg(args, 0, name())) {return {};}
+    ensure_min_arity(diag, file, line, args, 2);
+    if(!ensure_array_arg(diag, file, line, args, 0, name())) {return {};}
     auto v = std::get<std::vector<Value>>(args[0].data);
     v.push_back(args[1]);
     return Value(v);
 }
 
-Value BuiltinArrayLast::invoke(const std::vector<Value>& args)
+Value BuiltinArrayLast::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
     ensure_arity(args, 1, 1);
-    if(!ensure_array_arg(args, 0, name())) {return {};}
+    if(!ensure_array_arg(diag, file, line, args, 0, name())) {return {};}
     const auto& v = std::get<std::vector<Value>>(args[0].data);
-    if(v.empty()) {diag_error("array_last: empty array"); return {};}
+    if(v.empty()) {diag.error("array_last: empty array", file, line); return {};}
     return v.back();
 }
 
-Value BuiltinArrayPop::invoke(const std::vector<Value>& args)
+Value BuiltinArrayPop::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
     ensure_arity(args, 1, 1);
-    if(!ensure_array_arg(args, 0, name())) {return {};}
+    if(!ensure_array_arg(diag, file, line, args, 0, name())) {return {};}
     auto v = std::get<std::vector<Value>>(args[0].data);
-    if(v.empty()) {diag_error("array_pop: empty array"); return Value(v);}
+    if(v.empty()) {diag.error("array_pop: empty array", file, line); return Value(v);}
     v.pop_back();
     return Value(v);
 }
 
-Value BuiltinArrayInsert::invoke(const std::vector<Value>& args)
+Value BuiltinArrayInsert::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
-    ensure_min_arity(args, 3);
-    if(!ensure_array_arg(args, 0, name())) {return {};}
+    ensure_min_arity(diag, file, line, args, 3);
+    if(!ensure_array_arg(diag, file, line, args, 0, name())) {return {};}
     size_t i = 0;
-    if(!to_index_nonneg(args[1], i)) {diag_error("array_insert: index must be non-negative"); return {};}
+    if(!to_index_nonneg(args[1], i)) {diag.error("array_insert: index must be non-negative", file, line); return {};}
     auto v = std::get<std::vector<Value>>(args[0].data);
     if(i > v.size()) {i = v.size();}
     v.insert(v.begin() + static_cast<std::ptrdiff_t>(i), args[2]);
     return Value(v);
 }
 
-Value BuiltinArrayDelete::invoke(const std::vector<Value>& args)
+Value BuiltinArrayDelete::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
-    ensure_min_arity(args, 2);
-    if(!ensure_array_arg(args, 0, name())) {return {};}
+    ensure_min_arity(diag, file, line, args, 2);
+    if(!ensure_array_arg(diag, file, line, args, 0, name())) {return {};}
     size_t i = 0;
-    if(!to_index_nonneg(args[1], i)) {diag_error("array_delete: index must be non-negative"); return {};}
+    if(!to_index_nonneg(args[1], i)) {diag.error("array_delete: index must be non-negative", file, line); return {};}
     auto v = std::get<std::vector<Value>>(args[0].data);
-    if(i >= v.size()) {diag_error("array_delete: index out of bounds"); return Value(v);}
+    if(i >= v.size()) {diag.error("array_delete: index out of bounds", file, line); return Value(v);}
     v.erase(v.begin() + static_cast<std::ptrdiff_t>(i));
     return Value(v);
 }
 
-Value BuiltinArraySlice::invoke(const std::vector<Value>& args)
+Value BuiltinArraySlice::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
-    ensure_min_arity(args, 2);
-    if(!ensure_array_arg(args, 0, name())) {return {};}
+    ensure_min_arity(diag, file, line, args, 2);
+    if(!ensure_array_arg(diag, file, line, args, 0, name())) {return {};}
     const auto& src = std::get<std::vector<Value>>(args[0].data);
     size_t start = 0;
-    if(!to_index_nonneg(args[1], start)) {diag_error("array_slice: start must be non-negative"); return {};}
+    if(!to_index_nonneg(args[1], start)) {diag.error("array_slice: start must be non-negative", file, line); return {};}
     if(start >= src.size()) {return Value(std::vector<Value>{});}
     size_t count = src.size() - start;
     if(args.size() >= 3)
     {
         size_t tmp = 0;
-        if(!to_index_nonneg(args[2], tmp)) {diag_error("array_slice: count must be non-negative"); return {};}
+        if(!to_index_nonneg(args[2], tmp)) {diag.error("array_slice: count must be non-negative", file, line); return {};}
         count = tmp;
     }
     size_t avail = src.size() - start;
@@ -174,30 +174,30 @@ Value BuiltinArraySlice::invoke(const std::vector<Value>& args)
     return Value(out);
 }
 
-Value BuiltinArrayConcat::invoke(const std::vector<Value>& args)
+Value BuiltinArrayConcat::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
     ensure_arity(args, 2, 2);
-    if(!ensure_array_arg(args, 0, name())) {return {};}
-    if(!ensure_array_arg(args, 1, name())) {return {};}
+    if(!ensure_array_arg(diag, file, line, args, 0, name())) {return {};}
+    if(!ensure_array_arg(diag, file, line, args, 1, name())) {return {};}
     auto a = std::get<std::vector<Value>>(args[0].data);
     const auto& b = std::get<std::vector<Value>>(args[1].data);
     a.insert(a.end(), b.begin(), b.end());
     return Value(a);
 }
 
-Value BuiltinArrayReverse::invoke(const std::vector<Value>& args)
+Value BuiltinArrayReverse::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
     ensure_arity(args, 1, 1);
-    if(!ensure_array_arg(args, 0, name())) {return {};}
+    if(!ensure_array_arg(diag, file, line, args, 0, name())) {return {};}
     auto v = std::get<std::vector<Value>>(args[0].data);
     std::reverse(v.begin(), v.end());
     return Value(v);
 }
 
-Value BuiltinArrayIndexOf::invoke(const std::vector<Value>& args)
+Value BuiltinArrayIndexOf::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
-    ensure_min_arity(args, 2);
-    if(!ensure_array_arg(args, 0, name())) {return {};}
+    ensure_min_arity(diag, file, line, args, 2);
+    if(!ensure_array_arg(diag, file, line, args, 0, name())) {return {};}
     const auto& v = std::get<std::vector<Value>>(args[0].data);
     for(size_t i = 0; i < v.size(); ++i)
     {
@@ -206,10 +206,10 @@ Value BuiltinArrayIndexOf::invoke(const std::vector<Value>& args)
     return Value(-1);
 }
 
-Value BuiltinArrayContains::invoke(const std::vector<Value>& args)
+Value BuiltinArrayContains::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
-    ensure_min_arity(args, 2);
-    if(!ensure_array_arg(args, 0, name())) {return {};}
+    ensure_min_arity(diag, file, line, args, 2);
+    if(!ensure_array_arg(diag, file, line, args, 0, name())) {return {};}
     const auto& v = std::get<std::vector<Value>>(args[0].data);
     for(const auto& e : v)
     {
@@ -218,10 +218,10 @@ Value BuiltinArrayContains::invoke(const std::vector<Value>& args)
     return Value(false);
 }
 
-Value BuiltinArrayJoin::invoke(const std::vector<Value>& args)
+Value BuiltinArrayJoin::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
-    ensure_min_arity(args, 1);
-    if(!ensure_array_arg(args, 0, name())) {return {};}
+    ensure_min_arity(diag, file, line, args, 1);
+    if(!ensure_array_arg(diag, file, line, args, 0, name())) {return {};}
     std::string sep = (args.size() >= 2 && args[1].type == ValueType::STRING) ? std::get<std::string>(args[1].data) : ",";
     const auto& v = std::get<std::vector<Value>>(args[0].data);
     std::string out;
@@ -233,31 +233,31 @@ Value BuiltinArrayJoin::invoke(const std::vector<Value>& args)
     return Value(out);
 }
 
-Value BuiltinArrayResize::invoke(const std::vector<Value>& args)
+Value BuiltinArrayResize::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
-    ensure_min_arity(args, 2);
-    if(!ensure_array_arg(args, 0, name())) {return {};}
+    ensure_min_arity(diag, file, line, args, 2);
+    if(!ensure_array_arg(diag, file, line, args, 0, name())) {return {};}
     size_t n = 0;
-    if(!to_index_nonneg(args[1], n)) {diag_error("array_resize: new_size must be non-negative"); return {};}
+    if(!to_index_nonneg(args[1], n)) {diag.error("array_resize: new_size must be non-negative", file, line); return {};}
     auto v = std::get<std::vector<Value>>(args[0].data);
     Value fill = (args.size() >= 3) ? args[2] : Value();
     v.resize(n, fill);
     return Value(v);
 }
 
-Value BuiltinArrayFill::invoke(const std::vector<Value>& args)
+Value BuiltinArrayFill::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
-    ensure_min_arity(args, 2);
+    ensure_min_arity(diag, file, line, args, 2);
     size_t n = 0;
-    if(!to_index_nonneg(args[0], n)) {diag_error("array_fill: length must be non-negative"); return {};}
+    if(!to_index_nonneg(args[0], n)) {diag.error("array_fill: length must be non-negative", file, line); return {};}
     std::vector<Value> v(n, args[1]);
     return Value(v);
 }
 
-Value BuiltinArraySort::invoke(const std::vector<Value>& args)
+Value BuiltinArraySort::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
-    ensure_min_arity(args, 1);
-    if(!ensure_array_arg(args, 0, name())) {return {};}
+    ensure_min_arity(diag, file, line, args, 1);
+    if(!ensure_array_arg(diag, file, line, args, 0, name())) {return {};}
     bool asc = true;
     if(args.size() >= 2 && args[1].type == ValueType::BOOLEAN) {asc = std::get<bool>(args[1].data);}
     auto v = std::get<std::vector<Value>>(args[0].data);
@@ -268,10 +268,10 @@ Value BuiltinArraySort::invoke(const std::vector<Value>& args)
     return Value(v);
 }
 
-Value BuiltinArrayShuffle::invoke(const std::vector<Value>& args)
+Value BuiltinArrayShuffle::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
     ensure_arity(args, 1, 1);
-    if(!ensure_array_arg(args, 0, name())) {return {};}
+    if(!ensure_array_arg(diag, file, line, args, 0, name())) {return {};}
     auto v = std::get<std::vector<Value>>(args[0].data);
     static std::random_device rd;
     static std::mt19937 gen(rd());

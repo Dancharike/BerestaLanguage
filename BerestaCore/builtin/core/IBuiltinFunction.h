@@ -9,12 +9,13 @@
 #include <string>
 #include <vector>
 #include "value/Value.h"
+#include "diagnostics/Diagnostics.h"
 
 struct IBuiltinFunction
 {
     virtual ~IBuiltinFunction() = default;
     [[nodiscard]] virtual std::string name() const = 0;
-    virtual Value invoke(const std::vector<Value>& args) = 0;
+    virtual Value invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& filename, int line) = 0;
 };
 
 

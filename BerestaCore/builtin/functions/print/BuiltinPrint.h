@@ -11,7 +11,7 @@
 struct BuiltinPrint : IBuiltinFunction
 {
     [[nodiscard]] std::string name() const override {return "console_print";}
-    Value invoke(const std::vector<Value>& args) override;
+    Value invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& filename, int line) override;
 };
 
 

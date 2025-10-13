@@ -16,7 +16,7 @@ struct ReturnException {Value value; explicit ReturnException(Value val) : value
 Evaluator::Evaluator(Environment &env, FunctionIndex &index, std::string current_file, Diagnostics& diagnostics)
     : BaseContext(diagnostics, std::move(current_file)), _env(env), _index(index)
     {
-        _file_stack.push_back(std::move(current_file));
+        _file_stack.push_back(_current_file);
     }
 
 Value Evaluator::eval_expression(Expression* expr)
@@ -58,7 +58,7 @@ Value Evaluator::visit_string(StringExpr& expr) {return Value(expr.value);}
 
 Value Evaluator::visit_bool(BoolExpr& expr) {return Value(expr.value);}
 
-Value Evaluator::visit_variable(VariableExpr& expr) {return _env.get(expr.name);}
+Value Evaluator::visit_variable(VariableExpr& expr) {return _env.get(expr.name, current_file(), expr.line);}
 
 Value Evaluator::visit_unary(UnaryExpr& expr)
 {
@@ -142,7 +142,7 @@ Value Evaluator::visit_call(FunctionCallExpr& expr)
 
     if(auto* impl = BuiltinRegistry::instance().get(fn_name))
     {
-        try {return impl->invoke(args);}
+        try {return impl->invoke(args, _diag, current_file(), expr.line);}
         catch(const std::exception& ex) {_diag.error(std::string("Builtin error: ") + ex.what(), current_file(), expr.line); return {};}
         catch(...)                      {_diag.error("Builtin error: exception", current_file(), expr.line); return {};}
     }
@@ -247,7 +247,7 @@ Value Evaluator::visit_assignment(Assignment& stmt)
 {
     Value v = eval_expression(stmt.value.get());
     if(stmt.is_let) {_env.define(stmt.name, v);}
-    else            {_env.assign(stmt.name, v);}
+    else            {_env.assign(stmt.name, v, current_file(), stmt.line);}
     return v;
 }
 
@@ -400,7 +400,7 @@ Value Evaluator::visit_index_assignment(IndexAssignment& stmt)
         else {_diag.error("Indexed assignment not supported for this type", current_file(), stmt.line); return {};}
     }
 
-    _env.assign(var->name, container);
+    _env.assign(var->name, container, current_file(), stmt.line);
     return new_val;
 }
 

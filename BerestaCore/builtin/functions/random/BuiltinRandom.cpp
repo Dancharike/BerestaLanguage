@@ -16,26 +16,26 @@ static std::mt19937& rng()
     return gen;
 }
 
-Value BuiltinChooseFrom::invoke(const std::vector<Value>& args)
+Value BuiltinChooseFrom::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
-    if(args.empty()) {diag_error("choose_from expects at least 1 argument"); return {};}
+    if(args.empty()) {diag.error("choose_from expects at least 1 argument", file, line); return {};}
     std::uniform_int_distribution<size_t> dist(0, args.size() - 1);
     return args[dist(rng())];
 }
 
 
-Value BuiltinRandom::invoke(const std::vector<Value>& args)
+Value BuiltinRandom::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
-    if(!check_arity(args, 1, "random") || !check_numeric(args[0], "random", 1)) {return {};}
+    if(!check_arity(diag, file, line, args, 1, "random") || !check_numeric(diag, file, line, args[0], "random", 1)) {return {};}
     double upper = num(args[0]);
-    if(upper <= 0.0) {diag_error("random upper bound must be > 0"); return {};}
+    if(upper <= 0.0) {diag.error("random upper bound must be > 0", file, line); return {};}
     std::uniform_real_distribution<double> dist(0.0, upper);
     return Value(dist(rng()));
 }
 
-Value BuiltinRandomRange::invoke(const std::vector<Value>& args)
+Value BuiltinRandomRange::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
-    if(!check_arity(args, 2, "random_range") || !check_numeric(args[0], "random_range", 1) || !check_numeric(args[1], "random_range", 2)) {return {};}
+    if(!check_arity(diag, file, line, args, 2, "random_range") || !check_numeric(diag, file, line, args[0], "random_range", 1) || !check_numeric(diag, file, line, args[1], "random_range", 2)) {return {};}
     double min = num(args[0]);
     double max = num(args[1]);
     if(min > max) {std::swap(min, max);}
@@ -43,18 +43,18 @@ Value BuiltinRandomRange::invoke(const std::vector<Value>& args)
     return Value(dist(rng()));
 }
 
-Value BuiltinIntRandom::invoke(const std::vector<Value>& args)
+Value BuiltinIntRandom::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
-    if(!check_arity(args, 1, "int_random") || !check_numeric(args[0], "int_random", 1)) {return {};}
+    if(!check_arity(diag, file, line, args, 1, "int_random") || !check_numeric(diag, file, line, args[0], "int_random", 1)) {return {};}
     int upper = as_int_lossy(args[0]);
-    if(upper < 0) {diag_error("int_random: upper bound must be >= 0"); return {};}
+    if(upper < 0) {diag.error("int_random: upper bound must be >= 0", file, line); return {};}
     std::uniform_int_distribution<int> dist(0, upper);
     return Value(dist(rng()));
 }
 
-Value BuiltinIntRandomRange::invoke(const std::vector<Value>& args)
+Value BuiltinIntRandomRange::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
-    if(!check_arity(args, 2, "int_random_range") || !check_numeric(args[0], "int_random_range", 1) || !check_numeric(args[1], "int_random_range", 2)) {return {};}
+    if(!check_arity(diag, file, line, args, 2, "int_random_range") || !check_numeric(diag, file, line, args[0], "int_random_range", 1) || !check_numeric(diag, file, line, args[1], "int_random_range", 2)) {return {};}
     int min_val = as_int_lossy(args[0]);
     int max_val = as_int_lossy(args[1]);
     if(min_val > max_val) {std::swap(min_val, max_val);}

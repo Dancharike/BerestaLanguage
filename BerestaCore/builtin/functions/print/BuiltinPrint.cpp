@@ -6,7 +6,7 @@
 #include "builtin/core/BuiltinRegistry.h"
 #include <iostream>
 
-Value BuiltinPrint::invoke(const std::vector<Value>& args)
+Value BuiltinPrint::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
     if(!args.empty())
     {

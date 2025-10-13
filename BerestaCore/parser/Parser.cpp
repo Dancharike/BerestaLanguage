@@ -62,6 +62,7 @@ std::unique_ptr<Statement> Parser::parse_statement()
 
     ExpressionParser expr_parser(tokens, position, _env, _index, _current_file, _diag);
     auto expr = expr_parser.parse_expression();
+    position = expr_parser.get_position();
 
     if(!expr) {_diag.error("Failed to parse expression", current_file(), peek().line); return nullptr;}
 
@@ -89,6 +90,8 @@ std::unique_ptr<Assignment> Parser::parse_assignment()
     auto expr = expr_parser.parse_expression();
     position = expr_parser.get_position();
 
+    if(!expr) {_diag.error("Failed to parse expression after '='", current_file(), name_token.line); return nullptr;}
+
     if(!match(TokenType::SEMICOLON)) {_diag.error("Expected ';' after expression", current_file(), name_token.line); return nullptr;}
 
     return std::make_unique<Assignment>(is_let, name_token.value, std::move(expr), name_token.line, name_token.column);
@@ -107,6 +110,8 @@ std::unique_ptr<Assignment> Parser::parse_assignment_expression()
     auto expr = expr_parser.parse_expression();
     position = expr_parser.get_position();
 
+    if(!expr) {_diag.error("Failed to parse expression after '='", current_file(), name_token.line); return nullptr;}
+
     return std::make_unique<Assignment>(is_let, name_token.value, std::move(expr), name_token.line, name_token.column);
 }
 
@@ -118,6 +123,9 @@ std::unique_ptr<Statement> Parser::parse_if_statement()
 
     ExpressionParser expr_parser(tokens, position, _env, _index, _current_file, _diag);
     auto condition = expr_parser.parse_expression();
+    position = expr_parser.get_position();
+
+    if(!condition) {_diag.error("Failed to parse condition in 'if' statement", current_file(), if_token.line); return nullptr;}
 
     if(!match(TokenType::RIGHT_PAREN)) {_diag.error("Expected ')' after 'if' condition", current_file(), if_token.line); return nullptr;}
 
@@ -137,6 +145,9 @@ std::unique_ptr<Statement> Parser::parse_while_statement()
 
     ExpressionParser expr_parser(tokens, position, _env, _index, _current_file, _diag);
     auto condition = expr_parser.parse_expression();
+    position = expr_parser.get_position();
+
+    if(!condition) {_diag.error("Failed to parse condition in 'while' statement", current_file(), while_token.line); return nullptr;}
 
     if(!match(TokenType::RIGHT_PAREN)) {_diag.error("Expected ')' after 'while' condition", current_file(), while_token.line); return nullptr;}
 
@@ -152,6 +163,9 @@ std::unique_ptr<Statement> Parser::parse_repeat_statement()
 
     ExpressionParser expr_parser(tokens, position, _env, _index, _current_file, _diag);
     auto count_expr = expr_parser.parse_expression();
+    position = expr_parser.get_position();
+
+    if(!count_expr) {_diag.error("Failed to parse repeat count expression", current_file(), repeat_token.line); return nullptr;}
 
     if(!match(TokenType::RIGHT_PAREN)) {_diag.error("Expected ')' after 'repeat' condition", current_file(), repeat_token.line); return nullptr;}
 
@@ -174,10 +188,14 @@ std::unique_ptr<Statement> Parser::parse_for_statement()
     auto condition = cond_parser.parse_expression();
     position = cond_parser.get_position();
 
+    if(!condition) {_diag.error("Failed to parse condition in 'for' statement", current_file(), for_token.line); return nullptr;}
+
     if(!match(TokenType::SEMICOLON)) {_diag.error("Expected ';' after condition", current_file(), for_token.line); return nullptr;}
 
     std::unique_ptr<Statement> increment = nullptr;
     if(peek().type != TokenType::RIGHT_PAREN) {increment = parse_optional_assignment_or_expression();}
+
+    if(peek().type != TokenType::RIGHT_PAREN && !increment) {_diag.error("Failed to parse increment expression in 'for' statement", current_file(), for_token.line); return nullptr;}
 
     if(!match(TokenType::RIGHT_PAREN)) {_diag.error("Expected ')' after increment", current_file(), for_token.line); return nullptr;}
 
@@ -201,6 +219,8 @@ std::unique_ptr<Statement> Parser::parse_foreach_statement()
     ExpressionParser expr_parser(tokens, position, _env, _index, _current_file, _diag);
     auto iterable = expr_parser.parse_expression();
     position = expr_parser.get_position();
+
+    if(!iterable) {_diag.error("Failed to parse iterable expression in 'foreach' statement", current_file(), foreach_token.line); return nullptr;}
 
     if(!match(TokenType::RIGHT_PAREN)) {_diag.error("Expected ')' after foreach iterable", current_file(), foreach_token.line); return nullptr;}
 
@@ -307,6 +327,8 @@ std::unique_ptr<Statement> Parser::parse_index_assignment()
         auto idx = ep.parse_expression();
         position = ep.get_position();
 
+        if(!idx) {_diag.error("Failed to parse index expression", current_file(), name_token.line); return nullptr;}
+
         if(!match(TokenType::RIGHT_BRACKET)) {_diag.error("Expected ']' after index expression", current_file(), name_token.line); return nullptr;}
 
         target = std::make_unique<IndexExpr>(std::move(target), std::move(idx), lb.line, lb.column);
@@ -317,6 +339,8 @@ std::unique_ptr<Statement> Parser::parse_index_assignment()
     ExpressionParser epv(tokens, position, _env, _index, _current_file, _diag);
     auto val = epv.parse_expression();
     position = epv.get_position();
+
+    if(!val) {_diag.error("Failed to parse assigned value after index", current_file(), peek().line); return nullptr;}
 
     if(!match(TokenType::SEMICOLON)) {_diag.error("Expected ';' after assignment", current_file(), name_token.line); return nullptr;}
 
@@ -339,6 +363,8 @@ std::unique_ptr<Statement> Parser::parse_index_assignment_expression()
         auto idx = ep.parse_expression();
         position = ep.get_position();
 
+        if(!idx) {_diag.error("Failed to parse index expression", current_file(), name_token.line); return nullptr;}
+
         if(!match(TokenType::RIGHT_BRACKET)) {_diag.error("Expected ']' after index expression", current_file(), name_token.line); return nullptr;}
 
         target = std::make_unique<IndexExpr>(std::move(target), std::move(idx), lb.line, lb.column);
@@ -349,6 +375,8 @@ std::unique_ptr<Statement> Parser::parse_index_assignment_expression()
     ExpressionParser epv(tokens, position, _env, _index, _current_file, _diag);
     auto val = epv.parse_expression();
     position = epv.get_position();
+
+    if(!val) {_diag.error("Failed to parse assigned value after index", current_file(), peek().line); return nullptr;}
 
     if(dynamic_cast<IndexExpr*>(target.get()) == nullptr) {_diag.error("Indexed assignment requires at least one []", current_file(), name_token.line); return nullptr;}
 

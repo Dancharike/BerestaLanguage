@@ -13,9 +13,9 @@
 
 inline bool is_numeric(const Value& value) {return value.type == ValueType::INTEGER || value.type == ValueType::DOUBLE;}
 
-inline void diag_error(const std::string& msg)
+inline void diag_error(Diagnostics& diag, const std::string& file, int line, const std::string& msg)
 {
-    std::cerr << "[ERROR] " << msg << "\n";
+    diag.error(msg, file, line);
 }
 
 inline void ensure_arity(const std::vector<Value>& args, size_t min_arity, size_t max_arity = SIZE_MAX)
@@ -23,41 +23,41 @@ inline void ensure_arity(const std::vector<Value>& args, size_t min_arity, size_
     if(args.size() < min_arity || args.size() > max_arity) {throw std::runtime_error("Invalid number of arguments");}
 }
 
-inline bool ensure_min_arity(const std::vector<Value>& args, size_t min)
+inline bool ensure_min_arity(Diagnostics& diag, const std::string& file, int line, const std::vector<Value>& args, size_t min)
 {
     if(args.size() < min)
     {
-        diag_error("Function expects at least " + std::to_string(min) + " argument(s)");
+        diag.error("Function expects at least " + std::to_string(min) + " argument(s)", file, line);
         return false;
     }
     return true;
 }
 
-inline bool check_arity(const std::vector<Value>& args, size_t expected, const char* func_name)
+inline bool check_arity(Diagnostics& diag, const std::string& file, int line, const std::vector<Value>& args, size_t expected, const char* func_name)
 {
     if(args.size() != expected)
     {
-        diag_error(std::string(func_name) + " expects " + std::to_string(expected) + " argument(s)");
+        diag.error(std::string(func_name) + " expects " + std::to_string(expected) + " argument(s)", file, line);
         return false;
     }
     return true;
 }
 
-inline bool check_arity_range(const std::vector<Value>& args, size_t min_expected, const char* func_name)
+inline bool check_arity_range(Diagnostics& diag, const std::string& file, int line, const std::vector<Value>& args, size_t min_expected, const char* func_name)
 {
     if(args.size() < min_expected)
     {
-        diag_error(std::string(func_name) + " expects at least " + std::to_string(min_expected) + " argument(s)");
+        diag.error(std::string(func_name) + " expects at least " + std::to_string(min_expected) + " argument(s)", file, line);
         return false;
     }
     return true;
 }
 
-inline bool check_numeric(const Value& v, const char* func_name, int index1based)
+inline bool check_numeric(Diagnostics& diag, const std::string& file, int line, const Value& v, const char* func_name, int index1based)
 {
     if(!is_numeric(v))
     {
-        diag_error(std::string(func_name) + ": argument #" + std::to_string(index1based) + " must be numeric");
+        diag.error(std::string(func_name) + ": argument #" + std::to_string(index1based) + " must be numeric", file, line);
         return false;
     }
     return true;

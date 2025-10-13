@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
     std::filesystem::path root_dir = entry_path.parent_path();
 
     Diagnostics diag;
-    Environment env;
+    Environment env(&diag);
     FunctionIndex index;
     Interpreter interpreter(env, index, diag);
 
