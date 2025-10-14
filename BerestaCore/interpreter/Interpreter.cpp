@@ -3,9 +3,9 @@
 //
 
 #include "Interpreter.h"
-#include "lexer/Lexer.h"
-#include "parser/Parser.h"
-#include "builtin/core/BuiltinRegistry.h"
+#include "../frontend/lexer/Lexer.h"
+#include "../runtime/builtin/core/BuiltinRegistry.h"
+#include "../runtime/evaluator/Evaluator.h"
 
 Interpreter::Interpreter(Environment& env, FunctionIndex& index, Diagnostics& diag) : BaseContext(diag), _env(env), _index(index), _modules(_diag)
 {
@@ -17,7 +17,7 @@ void Interpreter::register_file(const std::string& filename, const std::string& 
     Lexer lexer(code);
     auto tokens = lexer.tokenize();
 
-    Parser parser(tokens, _env, _index, filename, _diag);
+    Parser parser(tokens, filename, _diag);
     auto statements = parser.parse();
 
     Module& module = _modules.register_module(filename, _env, _index);

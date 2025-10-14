@@ -6,9 +6,9 @@
 #define BERESTALANGUAGE_MODULEMANAGER_H
 
 #pragma once
+#include "Module.h"
 #include <unordered_map>
 #include <memory>
-#include "Module.h"
 
 class ModuleManager
 {

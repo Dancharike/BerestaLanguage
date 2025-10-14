@@ -6,13 +6,11 @@
 #define BERESTALANGUAGE_INTERPRETER_H
 
 #pragma once
-#include "../parser/Statement.h"
-#include "../parser/Evaluator.h"
-#include "../environment/Environment.h"
 #include "../interpreter/FunctionIndex.h"
-#include "../diagnostics/Diagnostics.h"
-#include "../diagnostics/BaseContext.h"
 #include "../module/ModuleManager.h"
+#include "../runtime/environment/Environment.h"
+#include "../frontend/diagnostics/Diagnostics.h"
+#include "../frontend/diagnostics/BaseContext.h"
 #include <unordered_map>
 #include <string>
 #include <vector>
@@ -26,8 +24,8 @@ class Interpreter : public BaseContext
         void run_project(const std::string& entry_file);
 
     private:
-        Environment _env;
-        FunctionIndex _index;
+        Environment& _env;
+        FunctionIndex& _index;
         ModuleManager _modules;
 };
 

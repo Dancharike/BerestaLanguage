@@ -6,11 +6,11 @@
 #define BERESTALANGUAGE_MODULE_H
 
 #pragma once
+#include "../runtime/environment/Environment.h"
+#include "../frontend/parser/Parser.h"
+#include "interpreter/FunctionIndex.h"
 #include <memory>
 #include <string>
-#include "../parser/Evaluator.h"
-#include "../parser/Statement.h"
-#include "../diagnostics/Diagnostics.h"
 
 class Module : BaseContext
 {
