@@ -40,6 +40,10 @@ struct Expression
     virtual ~Expression() = default;
 
     virtual Value accept(ExprVisitor& val) = 0;
+
+    [[nodiscard]] virtual std::string get_operator_value() const {return "";}
+    [[nodiscard]] virtual char get_operator_char() const {return '?';}
+    [[nodiscard]] virtual double get_number_value() const {return 0.0;}
 };
 
 struct NumberExpr : public Expression
@@ -49,6 +53,8 @@ struct NumberExpr : public Expression
     explicit NumberExpr(int number, int line = -1, int column = -1);
     explicit NumberExpr(double number, int line = -1, int column = -1);
     Value accept(ExprVisitor& val) override;
+
+    [[nodiscard]] double get_number_value() const override;
 };
 
 struct BinaryExpr : public Expression
@@ -84,6 +90,9 @@ struct StringExpr : public Expression
 
     explicit StringExpr(std::string val, int line = -1, int column = -1);
     Value accept(ExprVisitor& val) override;
+
+    [[nodiscard]] std::string get_operator_value() const override;
+    [[nodiscard]] char get_operator_char() const override;
 };
 
 struct BoolExpr : public Expression

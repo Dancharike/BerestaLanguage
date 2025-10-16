@@ -4,6 +4,18 @@
 
 #include "ExpressionParser.h"
 #include "Statement.h"
+#include "frontend/parser/ExpressionFactory.h"
+
+namespace
+{
+    template<typename... Args>
+    std::vector<std::unique_ptr<Expression>> make_args(Args&&... args)
+    {
+        std::vector<std::unique_ptr<Expression>> v;
+        (v.emplace_back(std::forward<Args>(args)), ...);
+        return v;
+    }
+}
 
 ExpressionParser::ExpressionParser(const std::vector<Token> &tokens, size_t &position, std::string current_file, Diagnostics& diag)
     : BaseContext(diag, std::move(current_file)), tokens(tokens), position(position)
@@ -37,7 +49,8 @@ std::unique_ptr<Expression> ExpressionParser::parse_logic()
     {
         Token op = tokens[position - 1];
         auto right = parse_comparison();
-        expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right), op.line, op.column);
+        //expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right), op.line, op.column);
+        expr = ExpressionFactory::instance().create("binary", make_args(std::move(expr), std::make_unique<StringExpr>(op.value, op.line, op.column), std::move(right)));
     }
 
     return expr;
@@ -51,7 +64,8 @@ std::unique_ptr<Expression> ExpressionParser::parse_comparison()
     {
         Token op = tokens[position - 1];
         auto right = parse_term();
-        expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right), op.line, op.column);
+        //expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right), op.line, op.column);
+        expr = ExpressionFactory::instance().create("binary", make_args(std::move(expr), std::make_unique<StringExpr>(op.value, op.line, op.column), std::move(right)));
     }
 
     return expr;
@@ -65,7 +79,8 @@ std::unique_ptr<Expression> ExpressionParser::parse_term()
     {
         Token op = advance();
         auto right = parse_factor();
-        expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right), op.line, op.column);
+        //expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right), op.line, op.column);
+        expr = ExpressionFactory::instance().create("binary", make_args(std::move(expr), std::make_unique<StringExpr>(op.value, op.line, op.column), std::move(right)));
     }
 
     return expr;
@@ -79,7 +94,8 @@ std::unique_ptr<Expression> ExpressionParser::parse_factor()
     {
         Token op = advance();
         auto right = parse_postfix(parse_primary());
-        expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right), op.line, op.column);
+        //expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right), op.line, op.column);
+        expr = ExpressionFactory::instance().create("binary", make_args(std::move(expr), std::make_unique<StringExpr>(op.value, op.line, op.column), std::move(right)));
     }
 
     return expr;
@@ -92,7 +108,8 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
         Token op = advance();
         auto right = parse_primary();
         char op_char = (op.type == TokenType::BANG) ? '!' : (op.type == TokenType::MINUS ? '-' : '+');
-        return std::make_unique<UnaryExpr>(op_char, std::move(right), op.line, op.column);
+        //return std::make_unique<UnaryExpr>(op_char, std::move(right), op.line, op.column);
+        return ExpressionFactory::instance().create("unary", make_args(std::make_unique<StringExpr>(std::string(1, op_char), op.line, op.column), std::move(right)));
     }
 
     if(match(TokenType::TRUE))  {Token t = tokens[position - 1]; return std::make_unique<BoolExpr>(true,  t.line, t.column);}

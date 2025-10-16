@@ -22,6 +22,12 @@ class Environment
 
         void define(const std::string& name, const Value& val) {_scopes.back()[name] = val;}
 
+        void define_global(const std::string& name, const Value& val)
+        {
+            if(_scopes.empty()) {_scopes.emplace_back();}
+            _scopes.front()[name] = val;
+        }
+
         bool assign(const std::string& name, const Value& v, const std::string& file = "", int line = -1)
         {
             for(int i = static_cast<int>(_scopes.size()) - 1; i >= 0; --i)

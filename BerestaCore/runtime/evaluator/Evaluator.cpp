@@ -239,8 +239,22 @@ Value Evaluator::visit_index(IndexExpr& expr)
 
 Value Evaluator::visit_member(MemberAccessExpr& expr)
 {
-    _diag.warn("Member access not yet implemented", current_file(), expr.line);
-    return {};
+    std::string base_name;
+
+    if(auto* var = dynamic_cast<VariableExpr*>(expr.object.get()))
+    {
+        base_name = var->name;
+    }
+    else
+    {
+        Value obj_val = eval_expression(expr.object.get());
+        base_name = obj_val.to_string();
+    }
+
+    std::string full_name = base_name + "." + expr.member;
+
+    try        {return _env.get(full_name, current_file(), expr.line);}
+    catch(...) {_diag.error("Member access failed: " + full_name, current_file(), expr.line); return {};}
 }
 
 Value Evaluator::visit_assignment(Assignment& stmt)
@@ -378,12 +392,16 @@ Value Evaluator::visit_index_assignment(IndexAssignment& stmt)
 
         if(cur->type == ValueType::ARRAY)
         {
-            int i = (idx_val.type == ValueType::INTEGER) ? std::get<int>(idx_val.data): static_cast<int>(std::get<double>(idx_val.data));
+            int i = (idx_val.type == ValueType::INTEGER) ? std::get<int>(idx_val.data) : static_cast<int>(std::get<double>(idx_val.data));
             auto& arr = std::get<std::vector<Value>>(cur->data);
             if(i < 0)                             {_diag.error("Negative array index", current_file(), stmt.line); return {};}
             if(i >= static_cast<int>(arr.size())) {arr.resize(i + 1, Value());}
             if(last)                              {arr[i] = new_val;}
-            else                                  {cur = &arr[i];}
+            else
+            {
+                if(arr[i].type == ValueType::NONE) {arr[i] = Value(std::vector<Value>{});}
+                cur = &arr[i];
+            }
         }
         else if(cur->type == ValueType::DICTIONARY)
         {
@@ -408,7 +426,7 @@ Value Evaluator::visit_enum(EnumStatement& stmt)
 {
     for(const auto& [name, val] : stmt.members)
     {
-        _env.define(stmt.name + "." + name, Value(val));
+        _env.define_global(stmt.name + "." + name, Value(val));
     }
     return {};
 }

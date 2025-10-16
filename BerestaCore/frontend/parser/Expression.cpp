@@ -4,6 +4,7 @@
 
 #include "Expression.h"
 #include "Visitors.h"
+#include "frontend/parser/ExpressionFactory.h"
 
 Expression::Expression(ExpressionType type, int line, int column)
     : type(type), line(line), column(column) {}
@@ -56,3 +57,37 @@ Value ArrayLiteralExpr::accept(ExprVisitor& val)      {return val.visit_array(*t
 Value DictionaryLiteralExpr::accept(ExprVisitor& val) {return val.visit_dictionary(*this);}
 Value IndexExpr::accept(ExprVisitor& val)             {return val.visit_index(*this);}
 Value MemberAccessExpr::accept(ExprVisitor& val)      {return val.visit_member(*this);}
+
+double NumberExpr::get_number_value() const
+{
+    if(value.type == ValueType::DOUBLE)  {return std::get<double>(value.data);}
+    if(value.type == ValueType::INTEGER) {return static_cast<double>(std::get<int>(value.data));}
+    return 0.0;
+}
+
+std::string StringExpr::get_operator_value() const {return value;}
+
+char StringExpr::get_operator_char() const {return value.empty() ? '?' : value[0];}
+
+// этот код нигде не используется, но нужен при компиляции, ещё до момента, как файл .beresta начал читаться, чтобы в нужный момент фабрика получила ссылку на способ сборки объекта
+[[maybe_unused]] static bool reg_binary_expr = []
+{
+    ExpressionFactory::instance().register_type("binary", [](std::vector<std::unique_ptr<Expression>>&& args) -> std::unique_ptr<Expression>
+    {
+        if(args.size() != 3) {return nullptr;}
+        std::string op = args[1] ? args[1]->get_operator_value() : "";
+        return std::make_unique<BinaryExpr>(op, std::move(args[0]), std::move(args[2]), 0, 0);
+    });
+    return true;
+}();
+
+[[maybe_unused]] static bool reg_unary_expr = []
+{
+    ExpressionFactory::instance().register_type("unary", [](std::vector<std::unique_ptr<Expression>>&& args) -> std::unique_ptr<Expression>
+    {
+        if(args.size() != 2) {return nullptr;}
+        char op = args[0] ? args[0]->get_operator_char() : '?';
+        return std::make_unique<UnaryExpr>(op, std::move(args[1]), 0, 0);
+    });
+    return true;
+}();

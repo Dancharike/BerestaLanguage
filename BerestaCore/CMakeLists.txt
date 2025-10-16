@@ -52,6 +52,8 @@ add_library(BerestaCore STATIC
         module/Module.h
         module/ModuleManager.cpp
         module/ModuleManager.h
+        frontend/parser/ExpressionFactory.cpp
+        frontend/parser/ExpressionFactory.h
 )
 
 target_include_directories(BerestaCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
