@@ -5,6 +5,7 @@
 #include "Statement.h"
 #include "Expression.h"
 #include "Visitors.h"
+#include "frontend/parser/StatementFactory.h"
 
 Statement::Statement(StatementType type, int line, int column)
     : type(type), line(line), column(column) {}
@@ -62,3 +63,119 @@ Value FunctionStatement::accept(StmtVisitor& val)   {return val.visit_function(*
 Value ReturnStatement::accept(StmtVisitor& val)     {return val.visit_return(*this);}
 Value IndexAssignment::accept(StmtVisitor& val)     {return val.visit_index_assignment(*this);}
 Value EnumStatement::accept(StmtVisitor& val)       {return val.visit_enum(*this);}
+
+// этот код нигде не используется, но нужен при компиляции, ещё до момента, как файл .beresta начал читаться, чтобы в нужный момент фабрика получила ссылку на способ сборки объекта
+[[maybe_unused]] static bool reg_expr_stmt = []
+{
+    StatementFactory::instance().register_type("expr_stmt", [](std::vector<std::unique_ptr<Statement>>&&, std::vector<std::unique_ptr<Expression>>&& exprs) -> std::unique_ptr<Statement>
+    {
+        if(exprs.empty()) {return nullptr;}
+        return std::make_unique<ExpressionStatement>(std::move(exprs[0]));
+    });
+    return true;
+}();
+
+[[maybe_unused]] static bool reg_if_stmt = []
+{
+    StatementFactory::instance().register_type("if", [](std::vector<std::unique_ptr<Statement>>&& stmts, std::vector<std::unique_ptr<Expression>>&& exprs) -> std::unique_ptr<Statement>
+    {
+        if(exprs.empty() || stmts.empty()) {return nullptr;}
+        auto cond = std::move(exprs[0]);
+        auto then_branch = std::move(stmts[0]);
+        std::unique_ptr<Statement> else_branch = (stmts.size() > 1) ? std::move(stmts[1]) : nullptr;
+        return std::make_unique<IfStatement>(std::move(cond), std::move(then_branch), std::move(else_branch));
+    });
+    return true;
+}();
+
+[[maybe_unused]] static bool reg_while_stmt = []
+{
+    StatementFactory::instance().register_type("while", [](std::vector<std::unique_ptr<Statement>>&& stmts, std::vector<std::unique_ptr<Expression>>&& exprs) -> std::unique_ptr<Statement>
+    {
+        if(exprs.empty() || stmts.empty()) {return nullptr;}
+        return std::make_unique<WhileStatement>(std::move(exprs[0]), std::move(stmts[0]));
+    });
+    return true;
+}();
+
+[[maybe_unused]] static bool reg_repeat_stmt = []
+{
+    StatementFactory::instance().register_type("repeat", [](std::vector<std::unique_ptr<Statement>>&& stmts, std::vector<std::unique_ptr<Expression>>&& exprs) -> std::unique_ptr<Statement>
+    {
+        if(exprs.empty() || stmts.empty()) {return nullptr;}
+        return std::make_unique<RepeatStatement>(std::move(exprs[0]), std::move(stmts[0]));
+    });
+    return true;
+}();
+
+[[maybe_unused]] static bool reg_for_stmt = []
+{
+    StatementFactory::instance().register_type("for", [](std::vector<std::unique_ptr<Statement>>&& stmts, std::vector<std::unique_ptr<Expression>>&& exprs) -> std::unique_ptr<Statement>
+    {
+        if(exprs.empty()) {return nullptr;}
+        auto init = (stmts.size() > 0) ? std::move(stmts[0]) : nullptr;
+        auto inc  = (stmts.size() > 1) ? std::move(stmts[1]) : nullptr;
+        auto body = (stmts.size() > 2) ? std::move(stmts[2]) : nullptr;
+        auto cond = std::move(exprs[0]);
+        return std::make_unique<ForStatement>(std::move(init), std::move(cond), std::move(inc), std::move(body));
+    });
+    return true;
+}();
+
+[[maybe_unused]] static bool reg_foreach_stmt = []
+{
+    StatementFactory::instance().register_type("foreach", [](std::vector<std::unique_ptr<Statement>>&& stmts, std::vector<std::unique_ptr<Expression>>&& exprs) -> std::unique_ptr<Statement>
+    {
+        if(exprs.empty() || stmts.empty()) {return nullptr;}
+        return std::make_unique<ForeachStatement>("<var>", std::move(exprs[0]), std::move(stmts[0]));
+    });
+    return true;
+}();
+
+[[maybe_unused]] static bool reg_block_stmt = []
+{
+    StatementFactory::instance().register_type("block", [](std::vector<std::unique_ptr<Statement>>&& stmts, std::vector<std::unique_ptr<Expression>>&&) -> std::unique_ptr<Statement>
+    {
+        return std::make_unique<BlockStatement>(std::move(stmts));
+    });
+    return true;
+}();
+
+[[maybe_unused]] static bool reg_function_stmt = []
+{
+    StatementFactory::instance().register_type("function", [](std::vector<std::unique_ptr<Statement>>&& stmts, std::vector<std::unique_ptr<Expression>>&&) -> std::unique_ptr<Statement>
+    {
+        if(stmts.empty()) {return nullptr;}
+        return std::make_unique<FunctionStatement>(FunctionVisibility::PUBLIC, "<anon>", std::vector<std::string>{}, std::move(stmts[0]));
+    });
+    return true;
+}();
+
+[[maybe_unused]] static bool reg_return_stmt = []
+{
+    StatementFactory::instance().register_type("return", [](std::vector<std::unique_ptr<Statement>>&&, std::vector<std::unique_ptr<Expression>>&& exprs) -> std::unique_ptr<Statement>
+    {
+        std::unique_ptr<Expression> val = exprs.empty() ? nullptr : std::move(exprs[0]);
+        return std::make_unique<ReturnStatement>(std::move(val));
+    });
+    return true;
+}();
+
+[[maybe_unused]] static bool reg_index_assign_stmt = []
+{
+    StatementFactory::instance().register_type("index_assign", [](std::vector<std::unique_ptr<Statement>>&&, std::vector<std::unique_ptr<Expression>>&& exprs) -> std::unique_ptr<Statement>
+    {
+        if(exprs.size() < 2) {return nullptr;}
+        return std::make_unique<IndexAssignment>(std::move(exprs[0]), std::move(exprs[1]));
+    });
+    return true;
+}();
+
+[[maybe_unused]] static bool reg_enum_stmt = []
+{
+    StatementFactory::instance().register_type("enum", [](std::vector<std::unique_ptr<Statement>>&&, std::vector<std::unique_ptr<Expression>>&&) -> std::unique_ptr<Statement>
+    {
+        return std::make_unique<EnumStatement>("<unnamed>", std::unordered_map<std::string, int>{});
+    });
+    return true;
+}();

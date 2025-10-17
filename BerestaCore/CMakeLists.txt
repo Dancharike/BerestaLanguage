@@ -14,8 +14,8 @@ add_library(BerestaCore STATIC
         frontend/parser/ExpressionParser.h
         runtime/evaluator/Evaluator.cpp
         runtime/evaluator/Evaluator.h
-        frontend/parser/Parser.cpp
-        frontend/parser/Parser.h
+        frontend/parser/StatementParser.cpp
+        frontend/parser/StatementParser.h
         interpreter/Interpreter.cpp
         interpreter/Interpreter.h
         frontend/parser/Expression.cpp
@@ -54,6 +54,8 @@ add_library(BerestaCore STATIC
         module/ModuleManager.h
         frontend/parser/ExpressionFactory.cpp
         frontend/parser/ExpressionFactory.h
+        frontend/parser/StatementFactory.cpp
+        frontend/parser/StatementFactory.h
 )
 
 target_include_directories(BerestaCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

@@ -17,7 +17,7 @@ void Interpreter::register_file(const std::string& filename, const std::string& 
     Lexer lexer(code);
     auto tokens = lexer.tokenize();
 
-    Parser parser(tokens, filename, _diag);
+    StatementParser parser(tokens, filename, _diag);
     auto statements = parser.parse();
 
     Module& module = _modules.register_module(filename, _env, _index);

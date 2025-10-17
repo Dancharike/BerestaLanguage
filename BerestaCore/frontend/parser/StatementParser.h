@@ -2,8 +2,8 @@
 // Created by Denis on 08.07.2025.
 //
 
-#ifndef BERESTALANGUAGE_PARSER_H
-#define BERESTALANGUAGE_PARSER_H
+#ifndef BERESTALANGUAGE_STATEMENTPARSER_H
+#define BERESTALANGUAGE_STATEMENTPARSER_H
 
 #pragma once
 #include "frontend/diagnostics/Diagnostics.h"
@@ -13,10 +13,10 @@
 #include <vector>
 #include <memory>
 
-class Parser : public BaseContext
+class StatementParser : public BaseContext
 {
     public:
-        explicit Parser(const std::vector<Token>& tokens, std::string current_file, Diagnostics& diag);
+        explicit StatementParser(const std::vector<Token>& tokens, std::string current_file, Diagnostics& diag);
         std::vector<std::unique_ptr<Statement>> parse();
         std::unique_ptr<Statement> parse_statement();
         std::unique_ptr<Assignment> parse_assignment();
@@ -47,4 +47,4 @@ class Parser : public BaseContext
 };
 
 
-#endif //BERESTALANGUAGE_PARSER_H
+#endif //BERESTALANGUAGE_STATEMENTPARSER_H

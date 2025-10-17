@@ -7,7 +7,7 @@
 
 #pragma once
 #include "../runtime/environment/Environment.h"
-#include "../frontend/parser/Parser.h"
+#include "frontend/parser/StatementParser.h"
 #include "interpreter/FunctionIndex.h"
 #include <memory>
 #include <string>

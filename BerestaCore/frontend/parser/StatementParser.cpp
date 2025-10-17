@@ -2,31 +2,52 @@
 // Created by Denis on 08.07.2025.
 //
 
+#include "StatementParser.h"
+#include "ExpressionParser.h"
+#include "StatementFactory.h"
 #include <unordered_map>
 #include <utility>
-#include "Parser.h"
-#include "ExpressionParser.h"
 
-Parser::Parser(const std::vector<Token>& tokens, std::string current_file, Diagnostics& diag)
+/*  namespace
+    {
+        template<typename... Args>
+        std::vector<std::unique_ptr<Statement>> make_stmt_args(Args&&... args)
+        {
+            std::vector<std::unique_ptr<Statement>> v;
+            (v.emplace_back(std::forward<Args>(args)), ...);
+            return v;
+        }
+
+        template<typename... Args>
+        std::vector<std::unique_ptr<Expression>> make_expr_args(Args&&... args)
+        {
+            std::vector<std::unique_ptr<Expression>> v;
+            (v.emplace_back(std::forward<Args>(args)), ...);
+            return v;
+        }
+    }
+*/
+
+StatementParser::StatementParser(const std::vector<Token>& tokens, std::string current_file, Diagnostics& diag)
     : BaseContext(diag, std::move(current_file)), tokens(tokens)
     {
         _file_stack.push_back(_current_file);
     }
 
-Token Parser::peek() const
+Token StatementParser::peek() const
 {
     return position < tokens.size() ? tokens[position] : Token(TokenType::END_OF_FILE, "", position);
 }
 
-Token Parser::advance() {return tokens[position++];}
+Token StatementParser::advance() {return tokens[position++];}
 
-bool Parser::match(TokenType type)
+bool StatementParser::match(TokenType type)
 {
     if(peek().type == type) {advance(); return true;}
     return false;
 }
 
-std::vector<std::unique_ptr<Statement>> Parser::parse()
+std::vector<std::unique_ptr<Statement>> StatementParser::parse()
 {
     std::vector<std::unique_ptr<Statement>> statements;
 
@@ -39,7 +60,7 @@ std::vector<std::unique_ptr<Statement>> Parser::parse()
     return statements;
 }
 
-std::unique_ptr<Statement> Parser::parse_statement()
+std::unique_ptr<Statement> StatementParser::parse_statement()
 {
     if(peek().type == TokenType::LET) {return parse_assignment();}
     if(peek().type == TokenType::IF) {return parse_if_statement();}
@@ -77,7 +98,7 @@ std::unique_ptr<Statement> Parser::parse_statement()
     return std::make_unique<ExpressionStatement>(std::move(expr), start_token.line, start_token.column);
 }
 
-std::unique_ptr<Assignment> Parser::parse_assignment()
+std::unique_ptr<Assignment> StatementParser::parse_assignment()
 {
     bool is_let = match(TokenType::LET);
 
@@ -97,7 +118,7 @@ std::unique_ptr<Assignment> Parser::parse_assignment()
     return std::make_unique<Assignment>(is_let, name_token.value, std::move(expr), name_token.line, name_token.column);
 }
 
-std::unique_ptr<Assignment> Parser::parse_assignment_expression()
+std::unique_ptr<Assignment> StatementParser::parse_assignment_expression()
 {
     bool is_let = match(TokenType::LET);
 
@@ -115,7 +136,7 @@ std::unique_ptr<Assignment> Parser::parse_assignment_expression()
     return std::make_unique<Assignment>(is_let, name_token.value, std::move(expr), name_token.line, name_token.column);
 }
 
-std::unique_ptr<Statement> Parser::parse_if_statement()
+std::unique_ptr<Statement> StatementParser::parse_if_statement()
 {
     Token if_token = advance();
 
@@ -137,7 +158,7 @@ std::unique_ptr<Statement> Parser::parse_if_statement()
     return std::make_unique<IfStatement>(std::move(condition), std::move(then_branch), std::move(else_branch), if_token.line, if_token.column);
 }
 
-std::unique_ptr<Statement> Parser::parse_while_statement()
+std::unique_ptr<Statement> StatementParser::parse_while_statement()
 {
     Token while_token = advance();
 
@@ -155,7 +176,7 @@ std::unique_ptr<Statement> Parser::parse_while_statement()
     return std::make_unique<WhileStatement>(std::move(condition), std::move(body), while_token.line, while_token.column);
 }
 
-std::unique_ptr<Statement> Parser::parse_repeat_statement()
+std::unique_ptr<Statement> StatementParser::parse_repeat_statement()
 {
     Token repeat_token = advance();
 
@@ -173,7 +194,7 @@ std::unique_ptr<Statement> Parser::parse_repeat_statement()
     return std::make_unique<RepeatStatement>(std::move(count_expr), std::move(body), repeat_token.line, repeat_token.column);
 }
 
-std::unique_ptr<Statement> Parser::parse_for_statement()
+std::unique_ptr<Statement> StatementParser::parse_for_statement()
 {
     Token for_token = advance();
 
@@ -203,7 +224,7 @@ std::unique_ptr<Statement> Parser::parse_for_statement()
     return std::make_unique<ForStatement>(std::move(initializer), std::move(condition), std::move(increment), std::move(body), for_token.line, for_token.column);
 }
 
-std::unique_ptr<Statement> Parser::parse_foreach_statement()
+std::unique_ptr<Statement> StatementParser::parse_foreach_statement()
 {
     Token foreach_token = advance();
 
@@ -228,7 +249,7 @@ std::unique_ptr<Statement> Parser::parse_foreach_statement()
     return std::make_unique<ForeachStatement>(std::move(var_name), std::move(iterable), std::move(body), foreach_token.line, foreach_token.column);
 }
 
-std::unique_ptr<Statement> Parser::parse_block()
+std::unique_ptr<Statement> StatementParser::parse_block()
 {
     Token brace = advance();
     std::vector<std::unique_ptr<Statement>> statements;
@@ -244,7 +265,7 @@ std::unique_ptr<Statement> Parser::parse_block()
     return std::make_unique<BlockStatement>(std::move(statements), brace.line, brace.column);
 }
 
-std::unique_ptr<Statement> Parser::parse_optional_assignment_or_expression()
+std::unique_ptr<Statement> StatementParser::parse_optional_assignment_or_expression()
 {
     if(peek().type == TokenType::LET || (peek().type == TokenType::IDENTIFIER && tokens[position + 1].type == TokenType::EQUALS))
     {
@@ -265,7 +286,7 @@ std::unique_ptr<Statement> Parser::parse_optional_assignment_or_expression()
     return std::make_unique<ExpressionStatement>(std::move(expr), expr_start.line, expr_start.column);
 }
 
-std::unique_ptr<Statement> Parser::parse_function_statement()
+std::unique_ptr<Statement> StatementParser::parse_function_statement()
 {
     FunctionVisibility visibility = FunctionVisibility::PUBLIC;
 
@@ -297,7 +318,7 @@ std::unique_ptr<Statement> Parser::parse_function_statement()
     return std::make_unique<FunctionStatement>(visibility, name, std::move(params), std::move(body), func_token.line, func_token.column);
 }
 
-std::unique_ptr<Statement> Parser::parse_return_statement()
+std::unique_ptr<Statement> StatementParser::parse_return_statement()
 {
     Token ret_token = advance();
     std::unique_ptr<Expression> val;
@@ -313,7 +334,7 @@ std::unique_ptr<Statement> Parser::parse_return_statement()
     return std::make_unique<ReturnStatement>(std::move(val), ret_token.line, ret_token.column);
 }
 
-std::unique_ptr<Statement> Parser::parse_index_assignment()
+std::unique_ptr<Statement> StatementParser::parse_index_assignment()
 {
     Token name_token = advance();
     std::unique_ptr<Expression> target = std::make_unique<VariableExpr>(name_token.value, name_token.line, name_token.column);
@@ -349,7 +370,7 @@ std::unique_ptr<Statement> Parser::parse_index_assignment()
     return std::make_unique<IndexAssignment>(std::move(target), std::move(val), name_token.line, name_token.column);
 }
 
-std::unique_ptr<Statement> Parser::parse_index_assignment_expression()
+std::unique_ptr<Statement> StatementParser::parse_index_assignment_expression()
 {
     Token name_token = advance();
     std::unique_ptr<Expression> target = std::make_unique<VariableExpr>(name_token.value, name_token.line, name_token.column);
@@ -383,7 +404,7 @@ std::unique_ptr<Statement> Parser::parse_index_assignment_expression()
     return std::make_unique<IndexAssignment>(std::move(target), std::move(val), name_token.line, name_token.column);
 }
 
-std::unique_ptr<Statement> Parser::parse_enum_statement()
+std::unique_ptr<Statement> StatementParser::parse_enum_statement()
 {
     Token enum_token = advance();
 
