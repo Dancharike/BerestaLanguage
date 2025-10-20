@@ -20,9 +20,12 @@ enum class ValueType
     BOOLEAN,
     STRING,
     ARRAY,
+    STRUCT,
     DICTIONARY,
     NONE
 };
+
+struct StructInstance;
 
 struct Value;
 using Dictionary = std::unordered_map<std::string, Value>;
@@ -32,7 +35,16 @@ class Value
 {
     public:
         ValueType type;
-        std::variant<std::monostate, int, double, bool, std::string, std::vector<Value>, DictionaryPtr> data;
+        std::variant<
+                    std::monostate,
+                    int,
+                    double,
+                    bool,
+                    std::string,
+                    std::vector<Value>,
+                    DictionaryPtr,
+                    std::shared_ptr<StructInstance>
+                    > data;
 
         Value();
         explicit Value(int val);
@@ -41,6 +53,7 @@ class Value
         explicit Value(const std::string& val);
         explicit Value(const std::vector<Value>& val);
         explicit Value(const Dictionary& val);
+        explicit Value(const StructInstance& val);
 
         [[nodiscard]] std::string to_string() const;
 };

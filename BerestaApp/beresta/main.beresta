@@ -1,0 +1,4 @@
+player_01 = obj_player("Denis", 100, 100, 30);
+
+console_print(player_01);
+console_print(player_01.name + " penis length is: " + player_01.penis_length + " cm!");

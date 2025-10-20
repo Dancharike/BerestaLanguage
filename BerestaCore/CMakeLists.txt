@@ -56,6 +56,8 @@ add_library(BerestaCore STATIC
         frontend/parser/ExpressionFactory.h
         frontend/parser/StatementFactory.cpp
         frontend/parser/StatementFactory.h
+        runtime/value/StructValue.cpp
+        runtime/value/StructValue.h
 )
 
 target_include_directories(BerestaCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

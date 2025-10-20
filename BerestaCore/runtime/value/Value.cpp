@@ -3,6 +3,8 @@
 //
 
 #include "Value.h"
+#include "runtime/value/StructValue.h"
+#include <memory>
 #include <sstream>
 #include <iomanip>
 
@@ -14,6 +16,7 @@ Value::Value(bool val) : type(ValueType::BOOLEAN), data(val) {}
 Value::Value(const std::string& val) : type(ValueType::STRING), data(val) {}
 Value::Value(const std::vector<Value>& val) : type(ValueType::ARRAY), data(val) {}
 Value::Value(const Dictionary& val) : type(ValueType::DICTIONARY), data(std::make_shared<Dictionary>(val)) {}
+Value::Value(const StructInstance& val) : type(ValueType::STRUCT), data(std::make_shared<StructInstance>(val)) {}
 
 std::string Value::to_string() const
 {
@@ -51,6 +54,25 @@ std::string Value::to_string() const
             return result;
         }
 
+        case ValueType::STRUCT:
+        {
+            const auto& ptr = std::get<std::shared_ptr<StructInstance>>(data);
+            const auto& inst = *ptr;
+            if(!inst.definition) {return "{ }";}
+
+            std::string s = "{ ";
+            for(size_t i = 0; i < inst.definition->field_names.size(); ++i)
+            {
+                const auto& name = inst.definition->field_names[i];
+                auto it = inst.fields.find(name);
+                s += name + ": " + (it != inst.fields.end() ? it->second.to_string() : "none");
+                if(i + 1 < inst.definition->field_names.size()) {s += ", ";}
+            }
+            s += " }";
+            return s;
+        }
+
+        /*
         case ValueType::DICTIONARY:
         {
             const auto& dict = *std::get<DictionaryPtr>(data);
@@ -64,7 +86,7 @@ std::string Value::to_string() const
             result += "}";
             return result;
         }
-
+        */
         case ValueType::NONE: return "none";
 
         default: return "none (no return)";

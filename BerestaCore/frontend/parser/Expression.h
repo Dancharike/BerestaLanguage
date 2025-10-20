@@ -24,6 +24,7 @@ enum class ExpressionType
     FUNCTION_CALL,
     ARRAY_LITERAL,
     DICTIONARY_LITERAL,
+    STRUCT_LITERAL,
     INDEX,
     MEMBER_ACCESS
 };
@@ -143,6 +144,14 @@ struct DictionaryLiteralExpr : public Expression
     std::vector<std::pair<std::unique_ptr<Expression>, std::unique_ptr<Expression>>> entries;
 
     explicit DictionaryLiteralExpr(std::vector<std::pair<std::unique_ptr<Expression>, std::unique_ptr<Expression>>> entr, int line = -1, int column = -1);
+    Value accept(ExprVisitor& val) override;
+};
+
+struct StructLiteralExpr : public Expression
+{
+    std::vector<std::pair<std::string, std::unique_ptr<Expression>>> fields;
+
+    explicit StructLiteralExpr(std::vector<std::pair<std::string, std::unique_ptr<Expression>>> fields, int line = -1, int column = -1);
     Value accept(ExprVisitor& val) override;
 };
 

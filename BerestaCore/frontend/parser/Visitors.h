@@ -11,7 +11,7 @@
 struct NumberExpr; struct StringExpr; struct BoolExpr;
 struct VariableExpr; struct UnaryExpr; struct BinaryExpr;
 struct FunctionCallExpr; struct ArrayLiteralExpr; struct DictionaryLiteralExpr;
-struct IndexExpr; struct MemberAccessExpr;
+struct IndexExpr; struct MemberAccessExpr; struct StructLiteralExpr;
 
 struct Assignment; struct AssignmentStatement; struct ExpressionStatement;
 struct IfStatement; struct WhileStatement; struct RepeatStatement;
@@ -31,6 +31,7 @@ struct ExprVisitor
     virtual Value visit_call(FunctionCallExpr& expr) = 0;
     virtual Value visit_array(ArrayLiteralExpr& expr) = 0;
     virtual Value visit_dictionary(DictionaryLiteralExpr& expr) = 0;
+    virtual Value visit_struct(StructLiteralExpr& expr) = 0;
     virtual Value visit_index(IndexExpr& expr) = 0;
     virtual Value visit_member(MemberAccessExpr& expr) = 0;
 };

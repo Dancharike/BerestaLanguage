@@ -158,7 +158,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
         if(!match(TokenType::RIGHT_BRACKET)) {_diag.error("Expected ']' after array literal", current_file(), lb.line); return nullptr;}
         return std::make_unique<ArrayLiteralExpr>(std::move(elems), lb.line, lb.column);
     }
-
+    /*
     if(match(TokenType::LEFT_BRACE))
     {
         Token lb = tokens[position - 1];
@@ -180,6 +180,26 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
 
         if(!match(TokenType::RIGHT_BRACE)) {_diag.error("Expected '}' after dictionary literal", current_file(), lb.line); return nullptr;}
         return std::make_unique<DictionaryLiteralExpr>(std::move(entries), lb.line, lb.column);
+    }
+    */
+    if(match(TokenType::LEFT_BRACE))
+    {
+        Token lb = tokens[position - 1];
+        std::vector<std::pair<std::string, std::unique_ptr<Expression>>> fields;
+
+        if(peek().type != TokenType::RIGHT_BRACE)
+        {
+            do
+            {
+                if(peek().type != TokenType::IDENTIFIER) {_diag.error("Expected field name (identifier) in struct literal", current_file(), lb.line); return nullptr;}
+
+                std::string name = advance().value;
+                fields.emplace_back(std::move(name), nullptr);
+            } while(match(TokenType::COMMA));
+        }
+
+        if(!match(TokenType::RIGHT_BRACE)) {_diag.error("Expected '}' after struct literal", current_file(), lb.line); return nullptr;}
+        return std::make_unique<StructLiteralExpr>(std::move(fields), lb.line, lb.column);
     }
 
     _diag.error("Unexpected token: " + peek().value, current_file(), peek().line);

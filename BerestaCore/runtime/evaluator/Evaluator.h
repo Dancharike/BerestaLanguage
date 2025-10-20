@@ -44,6 +44,7 @@ class Evaluator : public BaseContext, public ExprVisitor, public StmtVisitor
         Value visit_call(FunctionCallExpr& expr) override;
         Value visit_array(ArrayLiteralExpr& expr) override;
         Value visit_dictionary(DictionaryLiteralExpr& expr) override;
+        Value visit_struct(StructLiteralExpr& expr) override;
         Value visit_index(IndexExpr& expr) override;
         Value visit_member(MemberAccessExpr& expr) override;
 

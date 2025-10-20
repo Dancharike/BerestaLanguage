@@ -45,6 +45,8 @@ MemberAccessExpr::MemberAccessExpr(std::unique_ptr<Expression> obj, std::string 
 DictionaryLiteralExpr::DictionaryLiteralExpr(std::vector<std::pair<std::unique_ptr<Expression>, std::unique_ptr<Expression>>> entr, int line, int column)
     : Expression(ExpressionType::DICTIONARY_LITERAL, line, column), entries(std::move(entr)) {}
 
+StructLiteralExpr::StructLiteralExpr(std::vector<std::pair<std::string, std::unique_ptr<Expression>>> fields, int line, int column)
+    : Expression(ExpressionType::STRUCT_LITERAL, line, column), fields(std::move(fields)) {}
 
 Value NumberExpr::accept(ExprVisitor& val)            {return val.visit_number(*this);}
 Value StringExpr::accept(ExprVisitor& val)            {return val.visit_string(*this);}
@@ -55,6 +57,7 @@ Value BinaryExpr::accept(ExprVisitor& val)            {return val.visit_binary(*
 Value FunctionCallExpr::accept(ExprVisitor& val)      {return val.visit_call(*this);}
 Value ArrayLiteralExpr::accept(ExprVisitor& val)      {return val.visit_array(*this);}
 Value DictionaryLiteralExpr::accept(ExprVisitor& val) {return val.visit_dictionary(*this);}
+Value StructLiteralExpr::accept(ExprVisitor& val)     {return val.visit_struct(*this);}
 Value IndexExpr::accept(ExprVisitor& val)             {return val.visit_index(*this);}
 Value MemberAccessExpr::accept(ExprVisitor& val)      {return val.visit_member(*this);}
 

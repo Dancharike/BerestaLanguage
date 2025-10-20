@@ -10,6 +10,7 @@
 #include <vector>
 #include <stdexcept>
 #include "runtime/value/Value.h"
+#include "frontend/diagnostics/Diagnostics.h"
 
 inline bool is_numeric(const Value& value) {return value.type == ValueType::INTEGER || value.type == ValueType::DOUBLE;}
 

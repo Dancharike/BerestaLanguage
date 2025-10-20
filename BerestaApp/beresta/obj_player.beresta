@@ -1,0 +1,6 @@
+obj_player = {
+    name,
+    hp,
+    gold,
+    penis_length
+};

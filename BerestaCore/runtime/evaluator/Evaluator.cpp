@@ -7,6 +7,7 @@
 #include "frontend/parser/Statement.h"
 #include "interpreter/FunctionIndex.h"
 #include "runtime/builtin/core/BuiltinRegistry.h"
+#include "runtime/value/StructValue.h"
 #include <algorithm>
 #include <iostream>
 #include <unordered_map>
@@ -132,53 +133,85 @@ Value Evaluator::visit_binary(BinaryExpr& expr)
 
 Value Evaluator::visit_call(FunctionCallExpr& expr)
 {
-    auto* var = dynamic_cast<VariableExpr*>(expr.callee.get());
-    if(!var) {_diag.error("Only simple function names supported (e.g. foo(1))", current_file(), expr.line); return {};}
-
-    std::string fn_name = var->name;
-    std::vector<Value> args;
-    args.reserve(expr.arguments.size());
-    for(auto& a : expr.arguments) {args.push_back(eval_expression(a.get()));}
-
-    if(auto* impl = BuiltinRegistry::instance().get(fn_name))
+    if(auto* var = dynamic_cast<VariableExpr*>(expr.callee.get()))
     {
-        try {return impl->invoke(args, _diag, current_file(), expr.line);}
-        catch(const std::exception& ex) {_diag.error(std::string("Builtin error: ") + ex.what(), current_file(), expr.line); return {};}
-        catch(...)                      {_diag.error("Builtin error: exception", current_file(), expr.line); return {};}
+        std::string fn_name = var->name;
+
+        if(auto* impl = BuiltinRegistry::instance().get(fn_name))
+        {
+            std::vector<Value> args; args.reserve(expr.arguments.size());
+            for(auto& a : expr.arguments)
+            {
+                args.push_back(eval_expression(a.get()));
+            }
+
+            try                             {return impl->invoke(args, _diag, current_file(), expr.line);}
+            catch(const std::exception& ex) {_diag.error(std::string("Builtin error: ") + ex.what(), current_file(), expr.line); return {};}
+            catch(...)                      {_diag.error("Builtin error: exception", current_file(), expr.line); return {};}
+        }
+
+        if(const FunctionRef* ref = _index.find_function(fn_name, current_file()))
+        {
+            std::vector<Value> args; args.reserve(expr.arguments.size());
+            for(auto& a : expr.arguments)
+            {
+                args.push_back(eval_expression(a.get()));
+            }
+
+            FunctionStatement* fn = ref->func;
+            if(args.size() != fn->parameters.size()) {std::cerr << "[ERROR] Function " << fn_name << " expects " << fn->parameters.size() << " args, got " << args.size() << "\n"; return {};}
+
+            bool pushed_file = false;
+            if(ref->is_public && ref->file != current_file())
+            {
+                set_current_file(ref->file);
+                _file_stack.push_back(ref->file);
+                pushed_file = true;
+            }
+
+            _env.push_scope();
+            for(size_t i = 0; i < args.size(); ++i)
+            {
+                _env.define(fn->parameters[i], args[i]);
+            }
+
+            Value result;
+            try                              {result = eval_statement(fn->body.get());}
+            catch(const ReturnException& re) {result = re.value;}
+
+            _env.pop_scope();
+            if(pushed_file)
+            {
+                _file_stack.pop_back();
+                if(!_file_stack.empty()) {set_current_file(_file_stack.back());}
+            }
+
+            return result;
+        }
     }
 
-    const FunctionRef* ref = _index.find_function(fn_name, current_file());
-    if(!ref) {_diag.error("Unknown function: " + fn_name, current_file(), expr.line); return {};}
-
-    FunctionStatement* fn = ref->func;
-    if(args.size() != fn->parameters.size()) {std::cerr << "[ERROR] Function " << fn_name << " expects " << fn->parameters.size() << " args, got " << args.size() << "\n"; return {};}
-
-    bool pushed_file = false;
-    if(ref->is_public && ref->file != current_file())
+    Value callee_val = eval_expression(expr.callee.get());
+    if(callee_val.type == ValueType::STRUCT)
     {
-        set_current_file(ref->file);
-        _file_stack.push_back(ref->file);
-        pushed_file = true;
+        auto tmpl = std::get<std::shared_ptr<StructInstance>>(callee_val.data);
+
+        auto inst = std::make_shared<StructInstance>();
+        inst->definition = tmpl->definition;
+        inst->fields     = tmpl->fields;
+
+        const auto& order = inst->definition->field_names;
+        size_t n = std::min(order.size(), expr.arguments.size());
+        for(size_t i = 0; i < n; ++i)
+        {
+            Value v = eval_expression(expr.arguments[i].get());
+            inst->fields[order[i]] = v;
+        }
+
+        return Value(*inst);
     }
 
-    _env.push_scope();
-    for(size_t i = 0; i < args.size(); ++i)
-    {
-        _env.define(fn->parameters[i], args[i]);
-    }
-
-    Value result;
-    try {result = eval_statement(fn->body.get());}
-    catch(const ReturnException& re) {result = re.value;}
-
-    _env.pop_scope();
-    if(pushed_file)
-    {
-        _file_stack.pop_back();
-        if(!_file_stack.empty()) {set_current_file(_file_stack.back());}
-    }
-
-    return result;
+    _diag.error("Callee is not a function or struct template", current_file(), expr.line);
+    return {};
 }
 
 Value Evaluator::visit_array(ArrayLiteralExpr& expr)
@@ -192,7 +225,7 @@ Value Evaluator::visit_array(ArrayLiteralExpr& expr)
 
     return Value(elems);
 }
-
+/*
 Value Evaluator::visit_dictionary(DictionaryLiteralExpr& expr)
 {
     Dictionary dict;
@@ -205,6 +238,35 @@ Value Evaluator::visit_dictionary(DictionaryLiteralExpr& expr)
     }
 
     return Value(dict);
+}
+*/
+
+Value Evaluator::visit_dictionary(DictionaryLiteralExpr& expr)
+{
+    _diag.error("Dictionary literals are disabled in this build", current_file(), expr.line);
+    return {};
+}
+
+Value Evaluator::visit_struct(StructLiteralExpr& expr)
+{
+    auto def = std::make_shared<StructDefinition>();
+    auto inst = std::make_shared<StructInstance>();
+
+    def->field_names.reserve(expr.fields.size());
+    for(auto& kv : expr.fields)
+    {
+        const std::string& name = kv.first;
+        def->field_names.push_back(name);
+    }
+
+    inst->definition = def;
+
+    for(const auto& name : def->field_names)
+    {
+        inst->fields[name] = Value();
+    }
+
+    return Value(*inst);
 }
 
 Value Evaluator::visit_index(IndexExpr& expr)
@@ -223,7 +285,7 @@ Value Evaluator::visit_index(IndexExpr& expr)
         if(i < 0 || i >= static_cast<int>(arr.size())) {_diag.error("Array index out of bounds", current_file(), expr.line); return {};}
         return arr[i];
     }
-
+    /*
     if(container.type == ValueType::DICTIONARY)
     {
         std::string key = (idx.type == ValueType::STRING) ? std::get<std::string>(idx.data) : idx.to_string();
@@ -232,24 +294,25 @@ Value Evaluator::visit_index(IndexExpr& expr)
         if(it == dict.end()) {_diag.error("Key not found in dictionary: " + key, current_file(), expr.line); return {};}
         return it->second;
     }
-
+    */
     _diag.error("Indexing not supported for this type", current_file(), expr.line);
     return {};
 }
 
 Value Evaluator::visit_member(MemberAccessExpr& expr)
 {
-    std::string base_name;
+    Value obj_val = eval_expression(expr.object.get());
+    if(obj_val.type == ValueType::STRUCT)
+    {
+        auto inst = std::get<std::shared_ptr<StructInstance>>(obj_val.data);
+        auto it = inst->fields.find(expr.member);
+        if(it == inst->fields.end()) {_diag.error("Unknown struct field: " + expr.member, current_file(), expr.line); return {};}
+        return it->second;
+    }
 
-    if(auto* var = dynamic_cast<VariableExpr*>(expr.object.get()))
-    {
-        base_name = var->name;
-    }
-    else
-    {
-        Value obj_val = eval_expression(expr.object.get());
-        base_name = obj_val.to_string();
-    }
+    std::string base_name;
+    if(auto* var = dynamic_cast<VariableExpr*>(expr.object.get())) {base_name = var->name;}
+    else {base_name = obj_val.to_string();}
 
     std::string full_name = base_name + "." + expr.member;
 
@@ -403,6 +466,7 @@ Value Evaluator::visit_index_assignment(IndexAssignment& stmt)
                 cur = &arr[i];
             }
         }
+        /*
         else if(cur->type == ValueType::DICTIONARY)
         {
             std::string key = (idx_val.type == ValueType::STRING) ? std::get<std::string>(idx_val.data) : idx_val.to_string();
@@ -415,6 +479,7 @@ Value Evaluator::visit_index_assignment(IndexAssignment& stmt)
                 else                 {cur = &it->second;}
             }
         }
+        */
         else {_diag.error("Indexed assignment not supported for this type", current_file(), stmt.line); return {};}
     }
 
