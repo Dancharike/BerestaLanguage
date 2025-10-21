@@ -93,6 +93,7 @@ std::unique_ptr<Statement> StatementParser::parse_statement()
         if(!match(TokenType::SEMICOLON)) {_diag.error("Expected ';' after continue", current_file(), token.line); return nullptr;}
         return std::make_unique<ContinueStatement>(token.line, token.column);
     }
+    if(peek().type == TokenType::SWITCH) {return parse_switch_statement();}
 
     ExpressionParser expr_parser(tokens, position, _current_file, _diag);
     auto expr = expr_parser.parse_expression();
@@ -478,4 +479,50 @@ std::unique_ptr<Statement> StatementParser::parse_macros_statement()
     if(!match(TokenType::SEMICOLON)) {_diag.error("Expected ';' after macros declaration", current_file(), macros.line); return nullptr;}
 
     return std::make_unique<MacrosStatement>(std::move(macros_name), std::move(value_expr), macros.line, macros.column);
+}
+
+std::unique_ptr<Statement> StatementParser::parse_switch_statement()
+{
+    Token sw = advance();
+    if(!match(TokenType::LEFT_PAREN)) {_diag.error("Expected '(' after 'switch'", current_file(), sw.line); return nullptr;}
+
+    auto expr = ExpressionParser(tokens, position, current_file(), _diag).parse_expression();
+
+    if(!match(TokenType::RIGHT_PAREN)) {_diag.error("Expected ')' after switch expression", current_file(), sw.line); return nullptr;}
+
+    if(!match(TokenType::LEFT_BRACE)) {_diag.error("Expected '{' after switch(...)", current_file(), sw.line); return nullptr;}
+
+    std::vector<CaseClause> cases;
+
+    while(!match(TokenType::RIGHT_BRACE))
+    {
+        if(match(TokenType::CASE))
+        {
+            auto val = ExpressionParser(tokens, position, current_file(), _diag).parse_expression();
+            if(!match(TokenType::COLON)) {_diag.error("Expected ':' after case value", current_file(), sw.line); return nullptr;}
+
+            std::vector<std::unique_ptr<Statement>> body;
+            while(peek().type != TokenType::CASE && peek().type != TokenType::DEFAULT && peek().type != TokenType::RIGHT_BRACE)
+            {
+                body.push_back(parse_statement());
+            }
+
+            cases.push_back({std::move(val), std::move(body)});
+        }
+        else if(match(TokenType::DEFAULT))
+        {
+            if(!match(TokenType::COLON)) {_diag.error("Expected ':' after default", current_file(), sw.line); return nullptr;}
+
+            std::vector<std::unique_ptr<Statement>> body;
+            while (peek().type != TokenType::CASE && peek().type != TokenType::DEFAULT && peek().type != TokenType::RIGHT_BRACE)
+            {
+                body.push_back(parse_statement());
+            }
+
+            cases.push_back({nullptr, std::move(body)});
+        }
+        else {_diag.error("Expected 'case' or 'default' in switch", current_file(), peek().line); break;}
+    }
+
+    return std::make_unique<SwitchStatement>(std::move(expr), std::move(cases), sw.line, sw.column);
 }

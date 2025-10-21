@@ -58,6 +58,9 @@ BreakStatement::BreakStatement(int line, int column)
 ContinueStatement::ContinueStatement(int line, int column)
     : Statement(StatementType::CONTINUE, line, column) {}
 
+SwitchStatement::SwitchStatement(std::unique_ptr<Expression> expr, std::vector<CaseClause> cs, int line, int column)
+    : Statement(StatementType::SWITCH, line, column), expression(std::move(expr)), cases(std::move(cs)) {}
+
 Value Assignment::accept(StmtVisitor& val)          {return val.visit_assignment(*this);}
 Value AssignmentStatement::accept(StmtVisitor& val) {return val.visit_assignment_statement(*this);}
 Value ExpressionStatement::accept(StmtVisitor& val) {return val.visit_expr_stmt(*this);}
@@ -74,6 +77,7 @@ Value EnumStatement::accept(StmtVisitor& val)       {return val.visit_enum(*this
 Value MacrosStatement::accept(StmtVisitor& val)     {return val.visit_macros(*this);}
 Value BreakStatement::accept(StmtVisitor& val)      {return val.visit_break(*this);}
 Value ContinueStatement::accept(StmtVisitor& val)   {return val.visit_continue(*this);}
+Value SwitchStatement::accept(StmtVisitor& val)     {return val.visit_switch(*this);}
 
 // этот код нигде не используется, но нужен при компиляции, ещё до момента, как файл .beresta начал читаться, чтобы в нужный момент фабрика получила ссылку на способ сборки объекта
 [[maybe_unused]] static bool reg_expr_stmt = []

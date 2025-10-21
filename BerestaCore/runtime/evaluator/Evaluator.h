@@ -64,6 +64,7 @@ class Evaluator : public BaseContext, public ExprVisitor, public StmtVisitor
         Value visit_macros(MacrosStatement& stmt) override;
         Value visit_continue(ContinueStatement& stmt) override;
         Value visit_break(BreakStatement& stmt) override;
+        Value visit_switch(SwitchStatement& stmt) override;
 };
 
 

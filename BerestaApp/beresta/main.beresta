@@ -1,0 +1,10 @@
+let index = int_random(3);
+
+switch(index)
+{
+    case 0:  console_print("Index 1"); break;
+    case 1:  console_print("Index 2"); break;
+    case 2:  console_print("Index 3"); break;
+    //case 3:  console_print("Index 4"); break;
+    default: console_print("Something is wrong!");
+}

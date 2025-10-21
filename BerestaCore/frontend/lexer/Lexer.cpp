@@ -95,6 +95,9 @@ Token Lexer::next_token()
         if(ident == "return")   {return make(TokenType::RETURN);}
         if(ident == "continue") {return make(TokenType::CONTINUE);}
         if(ident == "break")    {return make(TokenType::BREAK);}
+        if(ident == "switch")   {return make(TokenType::SWITCH);}
+        if(ident == "case")     {return make(TokenType::CASE);}
+        if(ident == "default")  {return make(TokenType::DEFAULT);}
 
         return make(TokenType::IDENTIFIER);
     }

@@ -562,3 +562,39 @@ Value Evaluator::visit_break(BreakStatement& stmt)
 {
     throw BreakSignal();
 }
+
+Value Evaluator::visit_switch(SwitchStatement& stmt)
+{
+    Value val = eval_expression(stmt.expression.get());
+    bool matched = false;
+    Value result;
+
+    for(auto& cs : stmt.cases)
+    {
+        bool is_default = !cs.value;
+        bool condition = false;
+
+        if(!is_default)
+        {
+            Value case_val = eval_expression(cs.value.get());
+            condition = (val.to_string() == case_val.to_string());
+        }
+
+        if(condition || is_default)
+        {
+            matched = true;
+            try
+            {
+                for(auto& s : cs.body)
+                {
+                    result = eval_statement(s.get());
+                }
+            }
+            catch(const BreakSignal&) {break;}
+        }
+
+        if(matched && !is_default) {break;}
+    }
+
+    return result;
+}

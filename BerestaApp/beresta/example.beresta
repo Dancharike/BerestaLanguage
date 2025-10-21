@@ -439,4 +439,40 @@
 // добавлены макросы, что можно вызывать из любого файла
     console_print("App version is: " + VERSION);
     console_print("Pi value is: " + PI);
+
+// добавлен переключатель
+    function hero_action(action)
+    {
+        switch(action)
+        {
+            case "attack":
+                console_print(HERO_NAME + " swings the sword fiercely!");
+                break;
+
+            case "heal":
+                console_print(HERO_NAME + " drinks a potion and recovers 20 HP.");
+                break;
+
+            case "sleep":
+                console_print(HERO_NAME + " rests by the campfire... Zzz...");
+                break;
+
+            case "talk":
+                console_print(HERO_NAME + ": 'It's dangerous to go alone.'");
+                break;
+
+            default:
+                console_print(HERO_NAME + " is confused. Nothing happens.");
+        }
+    }
+
+    let actions = ["attack", "heal", "sleep", "talk", "dance"];
+    foreach(act in actions)
+    {
+        console_print("Player chooses: " + act);
+        hero_action(act);
+    }
+
+    console_print("switch demo done!");
+
 */

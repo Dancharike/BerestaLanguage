@@ -167,7 +167,7 @@ struct IndexAssignment : public Statement
     Value accept(StmtVisitor& val) override;
 };
 
-struct EnumStatement : Statement
+struct EnumStatement : public Statement
 {
     std::string name;
     std::unordered_map<std::string, int> members;
@@ -176,7 +176,7 @@ struct EnumStatement : Statement
     Value accept(StmtVisitor& val) override;
 };
 
-struct MacrosStatement : Statement
+struct MacrosStatement : public Statement
 {
     std::string name;
     std::unique_ptr<Expression> value;
@@ -185,15 +185,30 @@ struct MacrosStatement : Statement
     Value accept(StmtVisitor& val) override;
 };
 
-struct BreakStatement : Statement
+struct BreakStatement : public Statement
 {
     explicit BreakStatement(int line = -1, int column = -1);
     Value accept(StmtVisitor& val) override;
 };
 
-struct ContinueStatement : Statement
+struct ContinueStatement : public Statement
 {
     explicit ContinueStatement(int line = -1, int column = -1);
+    Value accept(StmtVisitor& val) override;
+};
+
+struct CaseClause
+{
+    std::unique_ptr<Expression> value;
+    std::vector<std::unique_ptr<Statement>> body;
+};
+
+struct SwitchStatement : public Statement
+{
+    std::unique_ptr<Expression> expression;
+    std::vector<CaseClause> cases;
+
+    SwitchStatement(std::unique_ptr<Expression> expr, std::vector<CaseClause> cs, int line = -1, int column = -1);
     Value accept(StmtVisitor& val) override;
 };
 

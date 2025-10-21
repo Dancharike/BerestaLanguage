@@ -36,6 +36,7 @@ class StatementParser : public BaseContext
         std::unique_ptr<Statement> parse_index_assignment_expression();
         std::unique_ptr<Statement> parse_enum_statement();
         std::unique_ptr<Statement> parse_macros_statement();
+        std::unique_ptr<Statement> parse_switch_statement();
 
         [[nodiscard]] Token peek() const;
         Token advance();
