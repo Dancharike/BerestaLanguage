@@ -93,6 +93,8 @@ Token Lexer::next_token()
         if(ident == "function") {return make(TokenType::FUNCTION);}
         if(ident == "enum")     {return make(TokenType::ENUM);}
         if(ident == "return")   {return make(TokenType::RETURN);}
+        if(ident == "continue") {return make(TokenType::CONTINUE);}
+        if(ident == "break")    {return make(TokenType::BREAK);}
 
         return make(TokenType::IDENTIFIER);
     }
@@ -131,6 +133,7 @@ Token Lexer::next_token()
         case '-': return {TokenType::MINUS, "-", start_pos, start_line, start_column};
         case '*': return {TokenType::STAR, "*", start_pos, start_line, start_column};
         case '/': return {TokenType::SLASH, "/", start_pos, start_line, start_column};
+        case '%': return {TokenType::PERCENT, "%", start_pos, start_line, start_column};
         case '=': return {TokenType::EQUALS, "=", start_pos, start_line, start_column};
         case '!': return {TokenType::BANG, "!", start_pos, start_line, start_column};
         case '<': return {TokenType::LESS, "<", start_pos, start_line, start_column};

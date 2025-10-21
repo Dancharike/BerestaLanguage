@@ -25,6 +25,7 @@ enum class TokenType
     MINUS,
     STAR,
     SLASH,
+    PERCENT,
     COLON,
     LEFT_PAREN,
     RIGHT_PAREN,

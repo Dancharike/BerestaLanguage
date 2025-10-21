@@ -55,6 +55,27 @@
         i = i + 1;
     }
 
+    let counter = 0;
+    while(counter < 10)
+    {
+        counter = counter + 1;
+
+        if(counter == 3)
+        {
+            console_print("skip 3");
+            continue;
+        }
+
+        if(counter == 8)
+        {
+            console_print("stop at 8");
+            break;
+        }
+
+        console_print(counter);
+    }
+    console_print("while done");
+
 // условие repeat()
     i = 0;
     repeat(5)
@@ -63,11 +84,41 @@
         i = i + 1;
     }
 
+    let random_check = 0;
+    repeat(10)
+    {
+        let n = int_random_range(1, 10);
+        console_print("num: " + n);
+
+        if(n == 7)
+        {
+            console_print("found 7, stop");
+            break;
+        }
+
+        if(n == 8)
+        {
+            console_print("found 8, stop");
+            break;
+        }
+
+        random_check = random_check + 1;
+    }
+    console_print("repeat done, total iterations: " + random_check);
+
 // условие for()
     for(let i = 0; i < 3; i = i + 1)
     {
         console_print(3);
     }
+
+    for(let j = 0; j < 10; j = j + 1)
+    {
+        if(j % 2 == 0) {continue;}
+        if(j == 7)     {break;}
+        console_print("odd: " + j);
+    }
+    console_print("for done");
 
 // вызов и работа с функциями
     c = 1;
@@ -325,10 +376,67 @@
         if(n > 10) {console_print(n);}
     }
 
+    let nested_matrix = [
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8, 9]
+    ];
+
+    foreach(row in nested_matrix)
+    {
+        foreach(val in row)
+        {
+            if(val == 5)
+            {
+                console_print("skip 5");
+                continue;
+            }
+
+            if(val == 8)
+            {
+                console_print("stop inner at 8");
+                break;
+            }
+
+            console_print(val);
+        }
+
+        if(row[0] == 7)
+        {
+            console_print("stop outer");
+            break;
+        }
+    }
+    console_print("foreach done");
+
+    function sum_positive(values)
+    {
+        let total = 0;
+
+        foreach(v in values)
+        {
+            if(v < 0)
+            {
+                console_print("skip negative: " + v);
+                continue;
+            }
+
+            total = total + v;
+        }
+
+        return total;
+    }
+
+    console_print("sum of positives: " + sum_positive([-10, 20, -5, 15, 30]));
+
 // структура
     player_01 = obj_player("Denis", 100, 100, 30);
 
     console_print(player_01);
     console_print(player_01.name + " penis length is: " + player_01.penis_length + " cm!");
     // только хранение данных, на данный момент не решился реализовывать хранение методов в структуре и наследование других структур
+
+// добавлены макросы, что можно вызывать из любого файла
+    console_print("App version is: " + VERSION);
+    console_print("Pi value is: " + PI);
 */

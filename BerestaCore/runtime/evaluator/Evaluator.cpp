@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <iostream>
 #include <unordered_map>
+#include <cmath>
 
 struct ReturnException {Value value; explicit ReturnException(Value val) : value(std::move(val)) {}};
 
@@ -52,6 +53,9 @@ void Evaluator::type_error(int line, const char* msg)
 {
     _diag.error(msg, current_file(), line);
 }
+
+struct BreakSignal {};
+struct ContinueSignal {};
 
 Value Evaluator::visit_number(NumberExpr& expr) {return expr.value;}
 
@@ -102,6 +106,30 @@ Value Evaluator::visit_binary(BinaryExpr& expr)
 
     if(both_nums)
     {
+        auto is_int = [](const Value& v){return v.type == ValueType::INTEGER;};
+        auto is_dbl = [](const Value& v){return v.type == ValueType::DOUBLE;};
+
+        if(op == "%")
+        {
+            if((is_int(lv) || is_dbl(lv)) && (is_int(rv) || is_dbl(rv)))
+            {
+                double r = (rv.type == ValueType::DOUBLE) ? std::get<double>(rv.data) : static_cast<double>(std::get<int>(rv.data));
+                if(r == 0.0) {_diag.error("Modulo by zero", current_file(), expr.line); return {};}
+
+                if(is_int(lv) && is_int(rv))
+                {
+                    int l = std::get<int>(lv.data);
+                    int rr = std::get<int>(rv.data);
+                    return Value(l % rr);
+                }
+                else
+                {
+                    double l = (lv.type == ValueType::DOUBLE) ? std::get<double>(lv.data) : static_cast<double>(std::get<int>(lv.data));
+                    return Value(std::fmod(l, r));
+                }
+            }
+        }
+
         double l = as_double(lv), r = as_double(rv);
         if(op == "+") {return Value(l + r);}
         if(op == "-") {return Value(l - r);}
@@ -350,7 +378,9 @@ Value Evaluator::visit_while(WhileStatement& stmt)
     Value result;
     while(is_truthy(eval_expression(stmt.condition.get())))
     {
-        result = eval_statement(stmt.body.get());
+        try                          {result = eval_statement(stmt.body.get());}
+        catch(const ContinueSignal&) {continue;}
+        catch(const BreakSignal&)    {break;}
     }
     return result;
 }
@@ -366,7 +396,9 @@ Value Evaluator::visit_repeat(RepeatStatement& stmt)
     Value result;
     for(int i = 0; i < n; ++i)
     {
-        result = eval_statement(stmt.body.get());
+        try                          {result = eval_statement(stmt.body.get());}
+        catch(const ContinueSignal&) {continue;}
+        catch(const BreakSignal&)    {break;}
     }
     return result;
 }
@@ -381,11 +413,20 @@ Value Evaluator::visit_for(ForStatement& stmt)
     {
         bool truthy = true;
         if(stmt.condition) {truthy = is_truthy(eval_expression(stmt.condition.get()));}
-
         if(!truthy) {break;}
 
-        result = eval_statement(stmt.body.get());
+        bool did_continue = false;
+        bool did_break    = false;
+
+        try                          {result = eval_statement(stmt.body.get());}
+        catch(const ContinueSignal&) {did_continue = true;}
+        catch(const BreakSignal&)    {did_break = true;}
+
+        if(did_break) {break;}
+
         if(stmt.increment) {eval_statement(stmt.increment.get());}
+
+        if(did_continue) {continue;}
     }
 
     _env.pop_scope();
@@ -402,7 +443,11 @@ Value Evaluator::visit_foreach(ForeachStatement& stmt)
     {
         _env.push_scope();
         _env.define(stmt.var_name, elem);
-        result = eval_statement(stmt.body.get());
+
+        try                          {result = eval_statement(stmt.body.get());}
+        catch(const ContinueSignal&) {_env.pop_scope(); continue;}
+        catch(const BreakSignal&)    {_env.pop_scope(); break;}
+
         _env.pop_scope();
     }
     return result;
@@ -506,4 +551,14 @@ Value Evaluator::visit_macros(MacrosStatement& stmt)
 
     _env.define_global(stmt.name, v);
     return v;
+}
+
+Value Evaluator::visit_continue(ContinueStatement& stmt)
+{
+    throw ContinueSignal();
+}
+
+Value Evaluator::visit_break(BreakStatement& stmt)
+{
+    throw BreakSignal();
 }

@@ -185,5 +185,18 @@ struct MacrosStatement : Statement
     Value accept(StmtVisitor& val) override;
 };
 
+struct BreakStatement : Statement
+{
+    explicit BreakStatement(int line = -1, int column = -1);
+    Value accept(StmtVisitor& val) override;
+};
+
+struct ContinueStatement : Statement
+{
+    explicit ContinueStatement(int line = -1, int column = -1);
+    Value accept(StmtVisitor& val) override;
+};
+
+
 #endif //BERESTALANGUAGE_STATEMENT_H
 

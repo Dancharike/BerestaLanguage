@@ -43,12 +43,12 @@ std::unique_ptr<Expression> ExpressionParser::parse_expression()
 
 std::unique_ptr<Expression> ExpressionParser::parse_logic()
 {
-    auto expr = parse_comparison();
+    auto expr = parse_equality();
 
     while(match(TokenType::AND) || match(TokenType::OR))
     {
         Token op = tokens[position - 1];
-        auto right = parse_comparison();
+        auto right = parse_equality();
         //expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right), op.line, op.column);
         expr = ExpressionFactory::instance().create("binary", make_args(std::move(expr), std::make_unique<StringExpr>(op.value, op.line, op.column), std::move(right)));
     }
@@ -60,7 +60,7 @@ std::unique_ptr<Expression> ExpressionParser::parse_comparison()
 {
     auto expr = parse_term();
 
-    while(match(TokenType::EQUAL_EQUAL) || match(TokenType::BANG_EQUAL) || match(TokenType::LESS) || match(TokenType::LESS_EQUAL) || match(TokenType::GREATER) || match(TokenType::GREATER_EQUAL))
+    while(match(TokenType::LESS) || match(TokenType::LESS_EQUAL) || match(TokenType::GREATER) || match(TokenType::GREATER_EQUAL))
     {
         Token op = tokens[position - 1];
         auto right = parse_term();
@@ -88,12 +88,12 @@ std::unique_ptr<Expression> ExpressionParser::parse_term()
 
 std::unique_ptr<Expression> ExpressionParser::parse_factor()
 {
-    auto expr = parse_postfix(parse_primary());
+    auto expr = parse_unary();
 
-    while(peek().type == TokenType::STAR || peek().type == TokenType::SLASH)
+    while(peek().type == TokenType::STAR || peek().type == TokenType::SLASH || peek().type == TokenType::PERCENT)
     {
         Token op = advance();
-        auto right = parse_postfix(parse_primary());
+        auto right = parse_unary();
         //expr = std::make_unique<BinaryExpr>(op.value, std::move(expr), std::move(right), op.line, op.column);
         expr = ExpressionFactory::instance().create("binary", make_args(std::move(expr), std::make_unique<StringExpr>(op.value, op.line, op.column), std::move(right)));
     }
@@ -101,17 +101,21 @@ std::unique_ptr<Expression> ExpressionParser::parse_factor()
     return expr;
 }
 
-std::unique_ptr<Expression> ExpressionParser::parse_primary()
+std::unique_ptr<Expression> ExpressionParser::parse_unary()
 {
     if(peek().type == TokenType::BANG || peek().type == TokenType::MINUS || peek().type == TokenType::PLUS)
     {
         Token op = advance();
-        auto right = parse_primary();
+        auto right = parse_unary();
         char op_char = (op.type == TokenType::BANG) ? '!' : (op.type == TokenType::MINUS ? '-' : '+');
         //return std::make_unique<UnaryExpr>(op_char, std::move(right), op.line, op.column);
-        return ExpressionFactory::instance().create("unary", make_args(std::make_unique<StringExpr>(std::string(1, op_char), op.line, op.column), std::move(right)));
+        return ExpressionFactory::instance().create("unary",make_args(std::make_unique<StringExpr>(std::string(1, op_char), op.line, op.column), std::move(right)));
     }
+    return parse_postfix(parse_primary());
+}
 
+std::unique_ptr<Expression> ExpressionParser::parse_primary()
+{
     if(match(TokenType::TRUE))  {Token t = tokens[position - 1]; return std::make_unique<BoolExpr>(true,  t.line, t.column);}
     if(match(TokenType::FALSE)) {Token t = tokens[position - 1]; return std::make_unique<BoolExpr>(false, t.line, t.column);}
 
@@ -204,6 +208,20 @@ std::unique_ptr<Expression> ExpressionParser::parse_primary()
 
     _diag.error("Unexpected token: " + peek().value, current_file(), peek().line);
     return nullptr;
+}
+
+std::unique_ptr<Expression> ExpressionParser::parse_equality()
+{
+    auto expr = parse_comparison();
+
+    while(match(TokenType::EQUAL_EQUAL) || match(TokenType::BANG_EQUAL))
+    {
+        Token op = tokens[position - 1];
+        auto right = parse_comparison();
+        expr = ExpressionFactory::instance().create("binary", make_args(std::move(expr), std::make_unique<StringExpr>(op.value, op.line, op.column), std::move(right)));
+    }
+
+    return expr;
 }
 
 std::unique_ptr<Expression> ExpressionParser::parse_postfix(std::unique_ptr<Expression> expr)

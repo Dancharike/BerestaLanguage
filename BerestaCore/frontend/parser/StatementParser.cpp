@@ -81,6 +81,18 @@ std::unique_ptr<Statement> StatementParser::parse_statement()
     if(peek().type == TokenType::FUNCTION) {return parse_function_statement();}
     if(peek().type == TokenType::RETURN) {return parse_return_statement();}
     if(peek().type == TokenType::MACROS) {return parse_macros_statement();}
+    if(peek().type == TokenType::BREAK)
+    {
+        Token token = advance();
+        if(!match(TokenType::SEMICOLON)) {_diag.error("Expected ';' after break", current_file(), token.line); return nullptr;}
+        return std::make_unique<BreakStatement>(token.line, token.column);
+    }
+    if(peek().type == TokenType::CONTINUE)
+    {
+        Token token = advance();
+        if(!match(TokenType::SEMICOLON)) {_diag.error("Expected ';' after continue", current_file(), token.line); return nullptr;}
+        return std::make_unique<ContinueStatement>(token.line, token.column);
+    }
 
     ExpressionParser expr_parser(tokens, position, _current_file, _diag);
     auto expr = expr_parser.parse_expression();

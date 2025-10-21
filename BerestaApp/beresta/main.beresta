@@ -1,2 +1,0 @@
-console_print("App version is: " + VERSION);
-console_print("Pi value is: " + PI);

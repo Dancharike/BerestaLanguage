@@ -17,7 +17,8 @@ struct Assignment; struct AssignmentStatement; struct ExpressionStatement;
 struct IfStatement; struct WhileStatement; struct RepeatStatement;
 struct ForStatement; struct ForeachStatement; struct BlockStatement;
 struct FunctionStatement; struct ReturnStatement; struct IndexAssignment;
-struct EnumStatement; struct MacrosStatement;
+struct EnumStatement; struct MacrosStatement; struct BreakStatement;
+struct ContinueStatement;
 
 struct ExprVisitor
 {
@@ -53,6 +54,8 @@ struct StmtVisitor
     virtual Value visit_index_assignment(IndexAssignment& stmt) = 0;
     virtual Value visit_enum(EnumStatement& stmt) = 0;
     virtual Value visit_macros(MacrosStatement& stmt) = 0;
+    virtual Value visit_break(BreakStatement& stmt) = 0;
+    virtual Value visit_continue(ContinueStatement& stmt) = 0;
 };
 
 

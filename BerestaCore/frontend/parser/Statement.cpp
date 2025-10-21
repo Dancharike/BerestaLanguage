@@ -52,6 +52,12 @@ EnumStatement::EnumStatement(std::string n, std::unordered_map<std::string, int>
 MacrosStatement::MacrosStatement(std::string name, std::unique_ptr<Expression> val, int line, int column)
     : Statement(StatementType::MACROS, line, column), name(std::move(name)), value(std::move(val)) {}
 
+BreakStatement::BreakStatement(int line, int column)
+    : Statement(StatementType::BREAK, line, column) {}
+
+ContinueStatement::ContinueStatement(int line, int column)
+    : Statement(StatementType::CONTINUE, line, column) {}
+
 Value Assignment::accept(StmtVisitor& val)          {return val.visit_assignment(*this);}
 Value AssignmentStatement::accept(StmtVisitor& val) {return val.visit_assignment_statement(*this);}
 Value ExpressionStatement::accept(StmtVisitor& val) {return val.visit_expr_stmt(*this);}
@@ -66,6 +72,8 @@ Value ReturnStatement::accept(StmtVisitor& val)     {return val.visit_return(*th
 Value IndexAssignment::accept(StmtVisitor& val)     {return val.visit_index_assignment(*this);}
 Value EnumStatement::accept(StmtVisitor& val)       {return val.visit_enum(*this);}
 Value MacrosStatement::accept(StmtVisitor& val)     {return val.visit_macros(*this);}
+Value BreakStatement::accept(StmtVisitor& val)      {return val.visit_break(*this);}
+Value ContinueStatement::accept(StmtVisitor& val)   {return val.visit_continue(*this);}
 
 // этот код нигде не используется, но нужен при компиляции, ещё до момента, как файл .beresta начал читаться, чтобы в нужный момент фабрика получила ссылку на способ сборки объекта
 [[maybe_unused]] static bool reg_expr_stmt = []
