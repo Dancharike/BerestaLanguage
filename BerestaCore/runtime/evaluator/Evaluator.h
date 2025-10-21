@@ -61,6 +61,7 @@ class Evaluator : public BaseContext, public ExprVisitor, public StmtVisitor
         Value visit_return(ReturnStatement& stmt) override;
         Value visit_index_assignment(IndexAssignment& stmt) override;
         Value visit_enum(EnumStatement& stmt) override;
+        Value visit_macros(MacrosStatement& stmt) override;
 };
 
 

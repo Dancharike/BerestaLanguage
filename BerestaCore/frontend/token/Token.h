@@ -53,6 +53,12 @@ enum class TokenType
     PRIVATE,
     FUNCTION,
     RETURN,
+    MACROS,
+    CONTINUE,
+    BREAK,
+    SWITCH,
+    CASE,
+    DEFAULT,
     END_OF_FILE,
     UNKNOWN
 };

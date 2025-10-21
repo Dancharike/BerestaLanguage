@@ -49,6 +49,8 @@ IndexAssignment::IndexAssignment(std::unique_ptr<Expression> t, std::unique_ptr<
 EnumStatement::EnumStatement(std::string n, std::unordered_map<std::string, int> m, int line, int column)
     : Statement(StatementType::ENUM, line, column), name(std::move(n)), members(std::move(m)) {}
 
+MacrosStatement::MacrosStatement(std::string name, std::unique_ptr<Expression> val, int line, int column)
+    : Statement(StatementType::MACROS, line, column), name(std::move(name)), value(std::move(val)) {}
 
 Value Assignment::accept(StmtVisitor& val)          {return val.visit_assignment(*this);}
 Value AssignmentStatement::accept(StmtVisitor& val) {return val.visit_assignment_statement(*this);}
@@ -63,6 +65,7 @@ Value FunctionStatement::accept(StmtVisitor& val)   {return val.visit_function(*
 Value ReturnStatement::accept(StmtVisitor& val)     {return val.visit_return(*this);}
 Value IndexAssignment::accept(StmtVisitor& val)     {return val.visit_index_assignment(*this);}
 Value EnumStatement::accept(StmtVisitor& val)       {return val.visit_enum(*this);}
+Value MacrosStatement::accept(StmtVisitor& val)     {return val.visit_macros(*this);}
 
 // этот код нигде не используется, но нужен при компиляции, ещё до момента, как файл .beresta начал читаться, чтобы в нужный момент фабрика получила ссылку на способ сборки объекта
 [[maybe_unused]] static bool reg_expr_stmt = []

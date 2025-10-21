@@ -118,6 +118,12 @@ Token Lexer::next_token()
     if(current == '>' && source[position + 1] == '=') {advance(); advance(); return {TokenType::GREATER_EQUAL, ">=", start_pos, start_line, start_column};}
     if(current == '&' && source[position + 1] == '&') {advance(); advance(); return {TokenType::AND, "&&", start_pos, start_line, start_column};}
     if(current == '|' && source[position + 1] == '|') {advance(); advance(); return {TokenType::OR, "||", start_pos, start_line, start_column};}
+    if(current == '#' && source.substr(position, 7) == "#macros")
+    {
+        position += 7;
+        column += 7;
+        return {TokenType::MACROS, "#macros", start_pos, start_line, start_column};
+    }
 
     switch(advance())
     {

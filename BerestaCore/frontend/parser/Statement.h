@@ -28,6 +28,11 @@ enum class StatementType
     BLOCK,
     FUNCTION,
     ENUM,
+    MACROS,
+    SWITCH,
+    CASE,
+    BREAK,
+    CONTINUE,
     RETURN
 };
 
@@ -168,6 +173,15 @@ struct EnumStatement : Statement
     std::unordered_map<std::string, int> members;
 
     EnumStatement(std::string  n, std::unordered_map<std::string, int> m, int line = -1, int column = -1);
+    Value accept(StmtVisitor& val) override;
+};
+
+struct MacrosStatement : Statement
+{
+    std::string name;
+    std::unique_ptr<Expression> value;
+
+    MacrosStatement(std::string name, std::unique_ptr<Expression> val, int line = -1, int column = -1);
     Value accept(StmtVisitor& val) override;
 };
 

@@ -80,6 +80,7 @@ std::unique_ptr<Statement> StatementParser::parse_statement()
     if(peek().type == TokenType::PUBLIC || peek().type == TokenType::PRIVATE) {return parse_function_statement();}
     if(peek().type == TokenType::FUNCTION) {return parse_function_statement();}
     if(peek().type == TokenType::RETURN) {return parse_return_statement();}
+    if(peek().type == TokenType::MACROS) {return parse_macros_statement();}
 
     ExpressionParser expr_parser(tokens, position, _current_file, _diag);
     auto expr = expr_parser.parse_expression();
@@ -443,4 +444,26 @@ std::unique_ptr<Statement> StatementParser::parse_enum_statement()
 
     if(!match(TokenType::RIGHT_BRACE)) {_diag.error("Expected '}' after enum members", current_file(), enum_token.line); return nullptr;}
     return std::make_unique<EnumStatement>(enum_name, std::move(members), enum_token.line, enum_token.column);
+}
+
+std::unique_ptr<Statement> StatementParser::parse_macros_statement()
+{
+    Token macros = advance();
+
+    if(peek().type != TokenType::IDENTIFIER) {_diag.error("Expected macros name after #macros", current_file(), macros.line); return nullptr;}
+
+    Token name_token = advance();
+    std::string macros_name = name_token.value;
+
+    if(!match(TokenType::EQUALS)) {_diag.error("Expected '=' after macros name", current_file(), macros.line); return nullptr;}
+
+    ExpressionParser expr_parser(tokens, position, _current_file, _diag);
+    auto value_expr = expr_parser.parse_expression();
+    position = expr_parser.get_position();
+
+    if(!value_expr) {_diag.error("Expected value for macros", current_file(), macros.line); return nullptr;}
+
+    if(!match(TokenType::SEMICOLON)) {_diag.error("Expected ';' after macros declaration", current_file(), macros.line); return nullptr;}
+
+    return std::make_unique<MacrosStatement>(std::move(macros_name), std::move(value_expr), macros.line, macros.column);
 }

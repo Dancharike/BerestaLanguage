@@ -325,4 +325,10 @@
         if(n > 10) {console_print(n);}
     }
 
+// структура
+    player_01 = obj_player("Denis", 100, 100, 30);
+
+    console_print(player_01);
+    console_print(player_01.name + " penis length is: " + player_01.penis_length + " cm!");
+    // только хранение данных, на данный момент не решился реализовывать хранение методов в структуре и наследование других структур
 */

@@ -53,7 +53,6 @@ void Interpreter::run_project(const std::string& entry_file)
         env.pop_scope();
     }
 
-
     set_current_file(entry_file);
 
     Environment& env = entry->environment();

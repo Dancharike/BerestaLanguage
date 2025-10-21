@@ -489,9 +489,21 @@ Value Evaluator::visit_index_assignment(IndexAssignment& stmt)
 
 Value Evaluator::visit_enum(EnumStatement& stmt)
 {
+    _env.define_global(stmt.name, Value());
+
     for(const auto& [name, val] : stmt.members)
     {
         _env.define_global(stmt.name + "." + name, Value(val));
     }
     return {};
+}
+
+Value Evaluator::visit_macros(MacrosStatement& stmt)
+{
+    Value v = eval_expression(stmt.value.get());
+
+    if(_env.exists(stmt.name)) {_diag.error("Macros already defined" + stmt.name, current_file(), stmt.line); return {};}
+
+    _env.define_global(stmt.name, v);
+    return v;
 }
