@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 3.16)
 project(BerestaCore)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "-Wl,--export-all-symbols")
 
-add_library(BerestaCore STATIC
+add_library(BerestaCore SHARED
         frontend/lexer/Lexer.cpp
         frontend/lexer/Lexer.h
         frontend/token/Token.cpp
@@ -59,6 +61,9 @@ add_library(BerestaCore STATIC
         runtime/value/StructValue.cpp
         runtime/value/StructValue.h
         runtime/environment/Environment.cpp
+        api/BerestaAPI.cpp
+        api/Export.h
 )
 
 target_include_directories(BerestaCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(BerestaCore PRIVATE BERESTA_BUILD_DLL)

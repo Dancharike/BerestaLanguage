@@ -6,6 +6,7 @@
 #define BERESTALANGUAGE_INTERPRETER_H
 
 #pragma once
+#include "api/Export.h"
 #include "../interpreter/FunctionIndex.h"
 #include "../module/ModuleManager.h"
 #include "../runtime/environment/Environment.h"
@@ -15,7 +16,7 @@
 #include <string>
 #include <vector>
 
-class Interpreter : public BaseContext
+class BERESTA_API Interpreter : public BaseContext
 {
     public:
         Interpreter(Environment& env, FunctionIndex& index, Diagnostics& diag);

@@ -6,13 +6,14 @@
 #define BERESTALANGUAGE_ENVIRONMENT_H
 
 #pragma once
+#include "api/Export.h"
 #include "runtime/value/Value.h"
 #include "frontend/diagnostics/Diagnostics.h"
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-class Environment
+class BERESTA_API Environment
 {
     public:
         explicit Environment(Diagnostics* diag, Environment* parent = nullptr);
