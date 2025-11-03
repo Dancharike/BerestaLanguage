@@ -55,41 +55,40 @@ class Diagnostics
             return false;
         }
 
-    void print_all() const
-    {
-        if(_list.empty()) {return;}
-
-        std::cerr << "\n--- DIAGNOSTICS REPORT ---\n";
-
-        for(const auto& d : _list)
-        {
-            std::string prefix;
-            switch(d.level)
-            {
-                case DiagnosticLevel::INFO:    {prefix = "[INFO] ";    break;}
-                case DiagnosticLevel::WARNING: {prefix = "[WARNING] "; break;}
-                case DiagnosticLevel::ERROR:   {prefix = "[ERROR] ";   break;}
-            }
-
-            std::cerr << prefix;
-
-            if(!d.file.empty())
-            {
-                std::cerr << d.file;
-                if(d.line >= 0)
-                {
-                    std::cerr << ":" << d.line;
-                    //if(d.column >= 0) {std::cerr << ":" << d.column;}
-                }
-                std::cerr << " -- ";
-            }
-
-            std::cerr << d.message << "\n";
-        }
-    }
+        void print_all() const {dump_to(std::cerr, true);}
+        void print_all(std::ostream& os) const {dump_to(os, true);}
 
     private:
         std::vector<Diagnostic> _list;
+
+        void dump_to(std::ostream& os, bool has_header) const
+        {
+            if(_list.empty()) {return;}
+
+            if(has_header) {os << "\n--- DIAGNOSTICS REPORT ---\n";}
+
+            for(const auto& d : _list)
+            {
+                std::string prefix;
+                switch(d.level)
+                {
+                    case DiagnosticLevel::INFO:    {prefix = "[INFO] ";    break;}
+                    case DiagnosticLevel::WARNING: {prefix = "[WARNING] "; break;}
+                    case DiagnosticLevel::ERROR:   {prefix = "[ERROR] ";   break;}
+                }
+
+                os << prefix;
+
+                if(!d.file.empty())
+                {
+                    os << d.file;
+                    if(d.line >= 0) {os << ":" << d.line;}
+                    os << " -- ";
+                }
+
+                os << d.message << "\n";
+            }
+        }
 };
 
 

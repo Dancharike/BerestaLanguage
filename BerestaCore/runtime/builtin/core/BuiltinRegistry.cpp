@@ -3,6 +3,7 @@
 //
 
 #include "BuiltinRegistry.h"
+#include "runtime/environment/Environment.h"
 #include <utility>
 
 void register_builtin_console_print();
@@ -35,6 +36,10 @@ void BuiltinRegistry::clear()
 {
     _builtins.clear();
 }
+
+static Environment* g_active_env = nullptr;
+void set_active_environment(Environment* env) {g_active_env = env;}
+Environment* get_active_environment() {return g_active_env;}
 
 void register_default_builtins()
 {

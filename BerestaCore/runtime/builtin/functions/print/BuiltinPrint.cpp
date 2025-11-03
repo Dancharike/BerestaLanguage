@@ -4,23 +4,29 @@
 
 #include "BuiltinPrint.h"
 #include "runtime/builtin/core/BuiltinRegistry.h"
+#include "runtime/environment/Environment.h"
 #include <iostream>
+
+extern Environment* get_active_environment();
 
 Value BuiltinPrint::invoke(const std::vector<Value>& args, Diagnostics& diag, const std::string& file, int line)
 {
+    Environment* env = get_active_environment();
+    std::ostream& out = env ? env->out() : std::cout;
+
     if(!args.empty())
     {
         for(size_t i = 0; i < args.size(); ++i)
         {
-            std::cout << args[i].to_string();
-            if(i + 1 < args.size()) {std::cout << " ";}
+            out << args[i].to_string();
+            if(i + 1 < args.size()) {out << " ";}
         }
 
-        std::cout << "\n";
+        out << "\n";
         return args.back();
     }
 
-    std::cout << "\n";
+    out << "\n";
     return {};
 }
 

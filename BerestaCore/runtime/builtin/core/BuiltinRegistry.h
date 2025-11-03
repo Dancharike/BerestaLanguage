@@ -27,5 +27,10 @@ class BuiltinRegistry
 
 void register_default_builtins();
 
+class Environment;
+
+void set_active_environment(Environment* env);
+Environment* get_active_environment();
+
 
 #endif //BERESTALANGUAGE_BUILTINREGISTRY_H
