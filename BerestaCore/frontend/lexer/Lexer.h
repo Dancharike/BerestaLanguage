@@ -7,10 +7,11 @@
 
 #pragma once
 #include "frontend/token/Token.h"
+#include "api/Export.h"
 #include <string>
 #include <vector>
 
-class Lexer
+class BERESTA_API Lexer
 {
     public:
         explicit Lexer(std::string source);

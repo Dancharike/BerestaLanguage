@@ -5,3 +5,4 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_subdirectory(BerestaCore)
 add_subdirectory(BerestaApp)
+add_subdirectory(BerestaTest)
