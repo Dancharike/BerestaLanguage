@@ -6,6 +6,7 @@
 #define BERESTALANGUAGE_STATEMENTPARSER_H
 
 #pragma once
+#include "api/Export.h"
 #include "frontend/diagnostics/Diagnostics.h"
 #include "frontend/diagnostics/BaseContext.h"
 #include "frontend/token/Token.h"
@@ -13,7 +14,7 @@
 #include <vector>
 #include <memory>
 
-class StatementParser : public BaseContext
+class BERESTA_API StatementParser : public BaseContext
 {
     public:
         explicit StatementParser(const std::vector<Token>& tokens, std::string current_file, Diagnostics& diag);

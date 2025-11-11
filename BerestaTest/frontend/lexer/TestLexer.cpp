@@ -125,3 +125,92 @@ TEST_CASE("Lexer tokenizes numeric literals correctly")
 
     CHECK_EQ(tokens.back().type, TokenType::END_OF_FILE);
 }
+
+TEST_CASE("Lexer recognizes keywords and logical operators")
+{
+    std::string src = "if else while for foreach repeat and or true false return break continue";
+    Lexer lexer(src);
+    std::vector<Token> tokens = lexer.tokenize();
+
+    std::vector<TokenType> expected =
+    {
+        TokenType::IF, TokenType::ELSE, TokenType::WHILE,
+        TokenType::FOR, TokenType::FOREACH, TokenType::REPEAT,
+        TokenType::AND, TokenType::OR, TokenType::TRUE, TokenType::FALSE,
+        TokenType::RETURN, TokenType::BREAK, TokenType::CONTINUE
+    };
+
+    for(size_t i = 0; i < expected.size(); i++)
+    {
+        CHECK_EQ(tokens[i].type, expected[i]);
+    }
+
+    CHECK_EQ(tokens.back().type, TokenType::END_OF_FILE);
+}
+
+TEST_CASE("Lexer parses comparison and boolean operators correctly")
+{
+    std::string src = "== != <= >= && || < >";
+    Lexer lexer(src);
+    std::vector<Token> tokens = lexer.tokenize();
+
+    std::vector<TokenType> expected =
+    {
+        TokenType::EQUAL_EQUAL, TokenType::BANG_EQUAL,
+        TokenType::LESS_EQUAL, TokenType::GREATER_EQUAL,
+        TokenType::AND, TokenType::OR,
+        TokenType::LESS, TokenType::GREATER
+    };
+
+    for(size_t i = 0; i < expected.size(); i++)
+    {
+        CHECK_EQ(tokens[i].type, expected[i]);
+    }
+
+    CHECK_EQ(tokens.back().type, TokenType::END_OF_FILE);
+}
+
+TEST_CASE("Lexer detects macros directive correctly")
+{
+    std::string src = "#macros MY_MACRO = 123;";
+    Lexer lexer(src);
+    std::vector<Token> tokens = lexer.tokenize();
+
+    REQUIRE(tokens.size() >= 5);
+
+    CHECK_EQ(tokens[0].type, TokenType::MACROS);
+
+    CHECK_EQ(tokens[1].type, TokenType::IDENTIFIER);
+    CHECK_EQ(tokens[1].value, "MY_MACRO");
+
+    CHECK_EQ(tokens[2].type, TokenType::EQUALS);
+
+    CHECK_EQ(tokens[3].type, TokenType::NUMBER);
+    CHECK_EQ(tokens[3].value, "123");
+
+    CHECK_EQ(tokens[4].type, TokenType::SEMICOLON);
+
+    CHECK_EQ(tokens.back().type, TokenType::END_OF_FILE);
+}
+
+TEST_CASE("Lexer correctly handles delimiters and parentheses")
+{
+    std::string src = "() {} [] , : ;";
+    Lexer lexer(src);
+    std::vector<Token> tokens = lexer.tokenize();
+
+    std::vector<TokenType> expected =
+    {
+        TokenType::LEFT_PAREN, TokenType::RIGHT_PAREN,
+        TokenType::LEFT_BRACE, TokenType::RIGHT_BRACE,
+        TokenType::LEFT_BRACKET, TokenType::RIGHT_BRACKET,
+        TokenType::COMMA, TokenType::COLON, TokenType::SEMICOLON
+    };
+
+    for(size_t i = 0; i < expected.size(); i++)
+    {
+        CHECK_EQ(tokens[i].type, expected[i]);
+    }
+
+    CHECK_EQ(tokens.back().type, TokenType::END_OF_FILE);
+}

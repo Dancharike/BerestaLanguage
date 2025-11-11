@@ -62,7 +62,12 @@ std::vector<std::unique_ptr<Statement>> StatementParser::parse()
 
 std::unique_ptr<Statement> StatementParser::parse_statement()
 {
-    if(peek().type == TokenType::LET) {return parse_assignment();}
+    if(peek().type == TokenType::LET)
+    {
+        auto assign = parse_assignment();
+        if(!assign) {return nullptr;}
+        return std::make_unique<AssignmentStatement>(std::move(assign));
+    }
     if(peek().type == TokenType::IF) {return parse_if_statement();}
     if(peek().type == TokenType::WHILE) {return parse_while_statement();}
     if(peek().type == TokenType::REPEAT) {return parse_repeat_statement();}
