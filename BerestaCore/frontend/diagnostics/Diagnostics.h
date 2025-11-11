@@ -6,6 +6,7 @@
 #define BERESTALANGUAGE_DIAGNOSTICS_H
 
 #pragma once
+#include "api/Export.h"
 #include <string>
 #include <utility>
 #include <vector>
@@ -28,7 +29,7 @@ struct Diagnostic
     Diagnostic(DiagnosticLevel lvl, std::string msg, std::string filename = "", int ln = -1) : level(lvl), message(std::move(msg)), file(std::move(filename)), line(ln) {}
 };
 
-class Diagnostics
+class BERESTA_API Diagnostics
 {
     public:
         void info(const std::string& msg, const std::string& file = "", int line = -1)

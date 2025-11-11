@@ -6,6 +6,7 @@
 #define BERESTALANGUAGE_FUNCTIONINDEX_H
 
 #pragma once
+#include "api/Export.h"
 #include <string>
 #include <unordered_map>
 #include <memory>
@@ -23,7 +24,7 @@ struct FunctionRef
     bool is_public {false};
 };
 
-class FunctionIndex
+class BERESTA_API FunctionIndex
 {
     public:
         void reindex_file(const std::string& file, const std::vector<std::unique_ptr<Statement>>& ast);

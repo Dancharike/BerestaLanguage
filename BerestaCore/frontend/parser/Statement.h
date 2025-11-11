@@ -6,6 +6,7 @@
 #define BERESTALANGUAGE_STATEMENT_H
 
 #pragma once
+#include "api/Export.h"
 #include "runtime/value/Value.h"
 #include <string>
 #include <memory>
@@ -44,7 +45,7 @@ enum class FunctionVisibility
 
 struct StmtVisitor;
 
-struct Statement
+struct BERESTA_API Statement
 {
     StatementType type;
     int line;
@@ -56,7 +57,7 @@ struct Statement
     virtual Value accept(StmtVisitor& val) = 0;
 };
 
-struct Assignment : public Statement
+struct BERESTA_API Assignment : public Statement
 {
     bool is_let;
     std::string name;
@@ -66,7 +67,7 @@ struct Assignment : public Statement
     Value accept(StmtVisitor& val) override;
 };
 
-struct AssignmentStatement : public Statement
+struct BERESTA_API AssignmentStatement : public Statement
 {
     std::unique_ptr<Assignment> assignment;
 
@@ -74,7 +75,7 @@ struct AssignmentStatement : public Statement
     Value accept(StmtVisitor& val) override;
 };
 
-struct ExpressionStatement : public Statement
+struct BERESTA_API ExpressionStatement : public Statement
 {
     std::unique_ptr<Expression> expression;
 
@@ -82,7 +83,7 @@ struct ExpressionStatement : public Statement
     Value accept(StmtVisitor& val) override;
 };
 
-struct IfStatement : public Statement
+struct BERESTA_API IfStatement : public Statement
 {
     std::unique_ptr<Expression> condition;
     std::unique_ptr<Statement> then_branch;
@@ -92,7 +93,7 @@ struct IfStatement : public Statement
     Value accept(StmtVisitor& val) override;
 };
 
-struct WhileStatement : public Statement
+struct BERESTA_API WhileStatement : public Statement
 {
     std::unique_ptr<Expression> condition;
     std::unique_ptr<Statement> body;
@@ -101,7 +102,7 @@ struct WhileStatement : public Statement
     Value accept(StmtVisitor& val) override;
 };
 
-struct RepeatStatement : public Statement
+struct BERESTA_API RepeatStatement : public Statement
 {
     std::unique_ptr<Expression> count;
     std::unique_ptr<Statement> body;
@@ -110,7 +111,7 @@ struct RepeatStatement : public Statement
     Value accept(StmtVisitor& val) override;
 };
 
-struct ForStatement : public Statement
+struct BERESTA_API ForStatement : public Statement
 {
     std::unique_ptr<Statement> initializer;
     std::unique_ptr<Expression> condition;
@@ -121,7 +122,7 @@ struct ForStatement : public Statement
     Value accept(StmtVisitor& val) override;
 };
 
-struct ForeachStatement : public Statement
+struct BERESTA_API ForeachStatement : public Statement
 {
     std::string var_name;
     std::unique_ptr<Expression> iterable;
@@ -131,7 +132,7 @@ struct ForeachStatement : public Statement
     Value accept(StmtVisitor& val) override;
 };
 
-struct BlockStatement : public Statement
+struct BERESTA_API BlockStatement : public Statement
 {
     std::vector<std::unique_ptr<Statement>> statements;
 
@@ -139,7 +140,7 @@ struct BlockStatement : public Statement
     Value accept(StmtVisitor& val) override;
 };
 
-struct FunctionStatement : public Statement
+struct BERESTA_API FunctionStatement : public Statement
 {
     FunctionVisibility visibility;
     std::string name;
@@ -150,7 +151,7 @@ struct FunctionStatement : public Statement
     Value accept(StmtVisitor& val) override;
 };
 
-struct ReturnStatement : public Statement
+struct BERESTA_API ReturnStatement : public Statement
 {
     std::unique_ptr<Expression> value;
 
@@ -158,7 +159,7 @@ struct ReturnStatement : public Statement
     Value accept(StmtVisitor& val) override;
 };
 
-struct IndexAssignment : public Statement
+struct BERESTA_API IndexAssignment : public Statement
 {
     std::unique_ptr<Expression> target;
     std::unique_ptr<Expression> value;
@@ -167,7 +168,7 @@ struct IndexAssignment : public Statement
     Value accept(StmtVisitor& val) override;
 };
 
-struct EnumStatement : public Statement
+struct BERESTA_API EnumStatement : public Statement
 {
     std::string name;
     std::unordered_map<std::string, int> members;
@@ -176,7 +177,7 @@ struct EnumStatement : public Statement
     Value accept(StmtVisitor& val) override;
 };
 
-struct MacrosStatement : public Statement
+struct BERESTA_API MacrosStatement : public Statement
 {
     std::string name;
     std::unique_ptr<Expression> value;
@@ -185,25 +186,25 @@ struct MacrosStatement : public Statement
     Value accept(StmtVisitor& val) override;
 };
 
-struct BreakStatement : public Statement
+struct BERESTA_API BreakStatement : public Statement
 {
     explicit BreakStatement(int line = -1, int column = -1);
     Value accept(StmtVisitor& val) override;
 };
 
-struct ContinueStatement : public Statement
+struct BERESTA_API ContinueStatement : public Statement
 {
     explicit ContinueStatement(int line = -1, int column = -1);
     Value accept(StmtVisitor& val) override;
 };
 
-struct CaseClause
+struct BERESTA_API CaseClause
 {
     std::unique_ptr<Expression> value;
     std::vector<std::unique_ptr<Statement>> body;
 };
 
-struct SwitchStatement : public Statement
+struct BERESTA_API SwitchStatement : public Statement
 {
     std::unique_ptr<Expression> expression;
     std::vector<CaseClause> cases;
@@ -214,4 +215,3 @@ struct SwitchStatement : public Statement
 
 
 #endif //BERESTALANGUAGE_STATEMENT_H
-

@@ -6,6 +6,7 @@
 #define BERESTALANGUAGE_EXPRESSIONPARSER_H
 
 #pragma once
+#include "api/Export.h"
 #include "frontend/diagnostics/Diagnostics.h"
 #include "frontend/diagnostics/BaseContext.h"
 #include "frontend/token/Token.h"
@@ -13,7 +14,7 @@
 #include <vector>
 #include <memory>
 
-class ExpressionParser : public BaseContext
+class BERESTA_API ExpressionParser : public BaseContext
 {
     public:
         explicit ExpressionParser(const std::vector<Token>& tokens, size_t& position, std::string current_file, Diagnostics& diag);

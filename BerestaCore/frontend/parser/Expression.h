@@ -6,6 +6,7 @@
 #define BERESTALANGUAGE_EXPRESSION_H
 
 #pragma once
+#include "api/Export.h"
 #include "runtime/value/Value.h"
 #include <memory>
 #include <string>
@@ -31,7 +32,7 @@ enum class ExpressionType
 
 struct ExprVisitor;
 
-struct Expression
+struct BERESTA_API Expression
 {
     ExpressionType type;
     int line;
@@ -47,7 +48,7 @@ struct Expression
     [[nodiscard]] virtual double get_number_value() const {return 0.0;}
 };
 
-struct NumberExpr : public Expression
+struct BERESTA_API NumberExpr : public Expression
 {
     Value value;
 
@@ -58,7 +59,7 @@ struct NumberExpr : public Expression
     [[nodiscard]] double get_number_value() const override;
 };
 
-struct BinaryExpr : public Expression
+struct BERESTA_API BinaryExpr : public Expression
 {
     std::string op;
     std::unique_ptr<Expression> left;
@@ -68,7 +69,7 @@ struct BinaryExpr : public Expression
     Value accept(ExprVisitor& val) override;
 };
 
-struct VariableExpr : public Expression
+struct BERESTA_API VariableExpr : public Expression
 {
     std::string name;
 
@@ -76,7 +77,7 @@ struct VariableExpr : public Expression
     Value accept(ExprVisitor& val) override;
 };
 
-struct UnaryExpr : public Expression
+struct BERESTA_API UnaryExpr : public Expression
 {
     char op;
     std::unique_ptr<Expression> right;
@@ -85,7 +86,7 @@ struct UnaryExpr : public Expression
     Value accept(ExprVisitor& val) override;
 };
 
-struct StringExpr : public Expression
+struct BERESTA_API StringExpr : public Expression
 {
     std::string value;
 
@@ -96,7 +97,7 @@ struct StringExpr : public Expression
     [[nodiscard]] char get_operator_char() const override;
 };
 
-struct BoolExpr : public Expression
+struct BERESTA_API BoolExpr : public Expression
 {
     bool value;
 
@@ -104,7 +105,7 @@ struct BoolExpr : public Expression
     Value accept(ExprVisitor& val) override;
 };
 
-struct FunctionCallExpr : public Expression
+struct BERESTA_API FunctionCallExpr : public Expression
 {
     std::unique_ptr<Expression> callee;
     std::vector<std::unique_ptr<Expression>> arguments;
@@ -113,7 +114,7 @@ struct FunctionCallExpr : public Expression
     Value accept(ExprVisitor& val) override;
 };
 
-struct ArrayLiteralExpr : public Expression
+struct BERESTA_API ArrayLiteralExpr : public Expression
 {
     std::vector<std::unique_ptr<Expression>> elements;
 
@@ -121,7 +122,7 @@ struct ArrayLiteralExpr : public Expression
     Value accept(ExprVisitor& val) override;
 };
 
-struct IndexExpr : public Expression
+struct BERESTA_API IndexExpr : public Expression
 {
     std::unique_ptr<Expression> array;
     std::unique_ptr<Expression> index;
@@ -130,7 +131,7 @@ struct IndexExpr : public Expression
     Value accept(ExprVisitor& val) override;
 };
 
-struct MemberAccessExpr : public Expression
+struct BERESTA_API MemberAccessExpr : public Expression
 {
     std::unique_ptr<Expression> object;
     std::string member;
@@ -139,7 +140,7 @@ struct MemberAccessExpr : public Expression
     Value accept(ExprVisitor& val) override;
 };
 
-struct DictionaryLiteralExpr : public Expression
+struct BERESTA_API DictionaryLiteralExpr : public Expression
 {
     std::vector<std::pair<std::unique_ptr<Expression>, std::unique_ptr<Expression>>> entries;
 
@@ -147,7 +148,7 @@ struct DictionaryLiteralExpr : public Expression
     Value accept(ExprVisitor& val) override;
 };
 
-struct StructLiteralExpr : public Expression
+struct BERESTA_API StructLiteralExpr : public Expression
 {
     std::vector<std::pair<std::string, std::unique_ptr<Expression>>> fields;
 

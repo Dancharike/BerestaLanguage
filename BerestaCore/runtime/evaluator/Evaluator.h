@@ -6,6 +6,7 @@
 #define BERESTALANGUAGE_EVALUATOR_H
 
 #pragma once
+#include "api/Export.h"
 #include "frontend/parser/Visitors.h"
 #include "frontend/parser/Expression.h"
 #include "frontend/parser/Statement.h"
@@ -19,7 +20,7 @@
 
 class FunctionIndex;
 
-class Evaluator : public BaseContext, public ExprVisitor, public StmtVisitor
+class BERESTA_API Evaluator : public BaseContext, public ExprVisitor, public StmtVisitor
 {
     public:
         Evaluator(Environment& env, FunctionIndex& index, std::string current_file, Diagnostics& _diag);
